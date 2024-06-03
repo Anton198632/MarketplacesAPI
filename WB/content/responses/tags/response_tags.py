@@ -2,13 +2,7 @@ from dataclasses import dataclass, field
 from typing import List, Any, Optional
 
 from WB.content.responses.response import Response
-
-
-@dataclass
-class Tag:
-    id: int = field(metadata={"description": "Числовой идентификатор тега"})
-    color: str = field(metadata={"description": "Цвет тега"})
-    name: str = field(metadata={"description": "Имя тега"})
+from WB.content.responses.tag import Tag
 
 
 @dataclass

@@ -1,7 +1,7 @@
 from typing import List
 from dataclasses import dataclass, field
 
-from WB.content.requests.cards_list_data import Settings
+from WB.content.requests.viewing.cards_list_data import Settings
 
 
 @dataclass
