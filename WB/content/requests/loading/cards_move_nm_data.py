@@ -1,4 +1,3 @@
-from ctypes import Union
 from dataclasses import dataclass, field
 from typing import List
 
@@ -29,16 +28,4 @@ class NMIDSplitData:
         metadata={
             "description": "`nmID`, которые необходимо разъединить (max 30)"
         }
-    )
-
-
-@dataclass
-class CardsMoveNmData:
-    data: Union[NMIDJoinData, NMIDSplitData] = field(
-        default=object,
-        metadata={
-            "description": (
-                "NMIDJoinData - для объединения, NMIDSplitData - разъединения"
-            ),
-        },
     )

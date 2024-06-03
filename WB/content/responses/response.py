@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Union
 
 
 @dataclass
@@ -9,6 +9,6 @@ class Response:
     errorText: str = field(
         default="", metadata={"description": "Описание ошибки"}
     )
-    additionalErrors: Dict = field(
+    additionalErrors: Union[Dict, str, None] = field(
         default={}, metadata={"descriptions": "Дополнительные ошибки"}
     )

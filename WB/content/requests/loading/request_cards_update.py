@@ -1,8 +1,10 @@
 from typing import List
 
 from WB.content.requests.loading.cards_update_data import Product
-from WB.content.requests.request_executor import AbsRequestExecutor, SERVER
-from WB.content.responses.response import Response
+from WB.request_executor import AbsRequestExecutor, SERVER
+from WB.content.responses.loading.response_card_create import (
+    ResponseCardCreate,
+)
 from WB.serializers import to_dict, from_dict
 
 URL = f"{SERVER}/content/v2/cards/update"
@@ -27,7 +29,7 @@ class RequestCardsUpdateAPI(AbsRequestExecutor):
     Габариты товаров можно указать только в **сантиметрах**.
     """
 
-    def execute(self, products: List[Product]) -> Response:
+    def execute(self, products: List[Product]) -> ResponseCardCreate:
         response = self._post(url=URL, json=to_dict(products))
         if response:
-            return from_dict(Response, response)
+            return from_dict(ResponseCardCreate, response)

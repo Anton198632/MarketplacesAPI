@@ -1,5 +1,5 @@
 import abc
-from typing import Any
+from typing import Any, Optional
 
 import requests
 
@@ -17,6 +17,9 @@ class AbsRequestExecutor:
 
     def __init__(self, api_key):
         self.__headers = {"Authorization": f"{api_key}"}
+
+    def _add_header(self, key, value):
+        self.__headers[key] = value
 
     def _get(self, url):
         response = requests.get(url=url, headers=self.__headers)
@@ -36,11 +39,18 @@ class AbsRequestExecutor:
         else:
             logger.warning(f"{response.status_code} {response.json()}")
 
-    def _post(self, url, json):
+    def _post(
+        self,
+        url,
+        json: Optional[dict] = None,
+        data: Optional[bytes] = None,
+        content_type: str = "application/json"
+    ):
         response = requests.post(
             url=url,
-            headers={**self.__headers, "Content-Type": "application/json"},
+            headers={**self.__headers, "Content-Type": content_type},
             json=json,
+            data=data
         )
 
         if (

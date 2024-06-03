@@ -4,9 +4,6 @@ from typing import List, Dict, Optional, Union
 
 import requests
 
-from WB.content.requests.loading.cards_update_data import CardsUpdateData, Product
-from WB.content.requests.size import Size
-
 
 @dataclass
 class Body:
@@ -84,14 +81,5 @@ if __name__ == "__main__":
                 responses=content.get("responses")
             )
         )
-
-    body = CardsUpdateData(items=[Product(
-        nmID=11211,
-        vendorCode="Qwerty",
-        sizes=[Size(skus=["wwww"])]
-    )])
-
-    data = asdict(body)
-
 
     pass

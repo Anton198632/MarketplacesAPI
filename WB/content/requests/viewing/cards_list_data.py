@@ -78,5 +78,3 @@ class CardsListData:
     settings: Settings = field(
         default=Settings, metadata={"description": "Настройки"}
     )
-
-

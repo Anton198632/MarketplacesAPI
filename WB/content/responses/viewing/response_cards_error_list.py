@@ -5,7 +5,7 @@ from WB.content.responses.response import Response
 
 
 @dataclass
-class Item:
+class CardError:
     object: Optional[str] = field(
         default=None,
         metadata={
@@ -36,6 +36,6 @@ class Item:
 
 @dataclass
 class ResponseCardsErrorList(Response):
-    data: List[Item] = field(
+    data: List[CardError] = field(
         default_factory=list, metadata={"description": "Список объектов"}
     )

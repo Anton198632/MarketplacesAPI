@@ -3,14 +3,9 @@ from typing import List
 
 
 @dataclass
-class Image:
-    url: str
-
-
-@dataclass
 class MediaSaveData:
     nmId: int
-    data: List[Image] = field(
+    data: List[str] = field(
         metadata={
             "description": (
                 "Ссылки на изображения в том порядке, в котором они будут на"
