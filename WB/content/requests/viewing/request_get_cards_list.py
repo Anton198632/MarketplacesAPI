@@ -54,7 +54,7 @@ class RequestGetCardsListAPI(AbsRequestExecutor):
     """
 
     def execute(
-            self, locale: Optional[str], card_list_data: CardsListData
+            self, card_list_data: CardsListData, locale: Optional[str] = None
     ) -> ResponseCardList:
         """
         :param locale: Example: locale=ru
@@ -64,6 +64,7 @@ class RequestGetCardsListAPI(AbsRequestExecutor):
         """
 
         url = f"{URL}?{locale=}" if locale else URL
-        response = self._post(url=url, json=to_dict(card_list_data))
+        json = to_dict(card_list_data)
+        response = self._post(url=url, json=json)
         if response:
             return from_dict(ResponseCardList, response)

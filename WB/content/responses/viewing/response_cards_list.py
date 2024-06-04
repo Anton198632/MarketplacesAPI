@@ -30,7 +30,7 @@ class CardData(Card):
             )
         }
     )
-    nmUUID: Optional[UUID] = field(
+    nmUUID: Optional[str] = field(
         default=None,
         metadata={
             "description": "Внутренний технический идентификатор товара"

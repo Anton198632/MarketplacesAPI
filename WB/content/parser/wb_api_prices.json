@@ -1,0 +1,1474 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "version": "",
+    "title": "API цен и скидок",
+    "description": "С помощью этих методов можно устанавливать цены и скидки. Максимум — 10 запросов за 6 секунд суммарно для всех методов.\n"
+  },
+  "security": [
+    {
+      "HeaderApiKey": []
+    }
+  ],
+  "x-tags": [
+    {
+      "name": "Установка цен и скидок",
+      "description": "\nПроверяйте статусы обновлений с помощью методов из раздела [Состояния загрузок](./#tag/Sostoyaniya-zagruzok). У методов может быть ответ Успешно (200), даже если не обновились данные у каких-то товаров или размеров (например, из-за слишком низкой цены или скидки)\n"
+    },
+    {
+      "name": "Состояния загрузок",
+      "description": "Когда вы обновляете цены или скидки, данные по каким-то товарам могут не обновиться. Например, если вы передали неправильную цену или скидку. Проверяйте статус загрузки с помощью метода [Состояние обработанной загрузки](./#tag/Istoriya-zagruzok/paths/~1api~1v2~1history~1tasks/get).\n\nСтатусы загрузки:\n\n  * `3` — обработана, в товарах нет ошибок, цены и скидки обновились.\n  * `4` — отменена.\n  * `5` — обработана, но в товарах есть ошибки. Для товаров без ошибок цены и скидки обновились, а ошибки в остальных товарах можно получить с помощью метода [Детализация обработанной загрузки](./#tag/Sostoyaniya-zagruzok/paths/~1api~1v2~1history~1goods~1task/get).\n  * `6` — обработана, но во всех товарах есть ошибки. Их тоже можно получить с помощью метода [Детализация обработанной загрузки](#tag/Sostoyaniya-zagruzok/paths/~1api~1v2~1history~1goods~1task/get).\n\n\nЕсли вы задаёте цены и скидки [в календаре акций](https://seller.wildberries.ru/dp-promo-calendar), загрузка с такими товарами попадает в обработку. Цены и скидки изменятся к началу акции.\n\n\nУ такой загрузки статус `1`, а получить информацию про нее можно с помощью методов [Детализация необработанной загрузки](./#tag/Istoriya-zagruzok/paths/~1api~1v2~1buffer~1goods~1task/get) и [Состояние необработанной загрузки](#tag/Istoriya-zagruzok/paths/~1api~1v2~1buffer~1tasks/get)\n\n<blockquote class=\"spoiler\">\n  <p class=\"descr\">У загрузки не может быть статуса <code>2</code>.</p>\n</blockquote>\n"
+    },
+    {
+      "name": "Списки товаров"
+    },
+    {
+      "name": "Цены"
+    },
+    {
+      "name": "Промокоды и скидки"
+    }
+  ],
+  "paths": {
+    "/api/v2/upload/task": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Установка цен и скидок"
+        ],
+        "summary": "Установить цены и скидки",
+        "description": "Устанавливает цены и скидки для товаров\n",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/SupplierTaskRequest"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessTaskResponse"
+          },
+          "208": {
+            "$ref": "#/components/responses/Responses208"
+          },
+          "400": {
+            "description": "Неправильный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseError"
+                },
+                "examples": {
+                  "GoodsNumberLimitExceeded": {
+                    "$ref": "#/components/examples/GoodsNumberLimitExceeded"
+                  },
+                  "DuplicatedNmIdInTask": {
+                    "$ref": "#/components/examples/DuplicatedNmIdInTask"
+                  },
+                  "NoGoodsForProcess": {
+                    "$ref": "#/components/examples/NoGoodsForProcess"
+                  },
+                  "FailedToParseData": {
+                    "$ref": "#/components/examples/FailedToParseData"
+                  },
+                  "PriceHasDecimalPlaces": {
+                    "$ref": "#/components/examples/PriceHasDecimalPlaces"
+                  },
+                  "WrongPriceValue": {
+                    "$ref": "#/components/examples/WrongPriceValue"
+                  },
+                  "WrongNmValue": {
+                    "$ref": "#/components/examples/WrongNmValue"
+                  },
+                  "BothDiscountAndPriceAreNotSet": {
+                    "$ref": "#/components/examples/PriceNotSet"
+                  },
+                  "EmptyData": {
+                    "$ref": "#/components/examples/EmptyData"
+                  },
+                  "NoValidGoodsInTask": {
+                    "$ref": "#/components/examples/NoValidGoodsInTask"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Responses401"
+          },
+          "429": {
+            "$ref": "#/components/responses/ExceededLimitRequests429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Responses500"
+          }
+        }
+      }
+    },
+    "/api/v2/upload/task/size": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Установка цен и скидок"
+        ],
+        "summary": "Установить цены для размеров",
+        "description": "Устанавливает цены отдельно для размеров. Работает только для товаров из категорий, где можно устанавливать цены отдельно для разных размеров. Для таких товаров в ответе метода [Получить товары по артикулам](./#tag/Spiski-tovarov/paths/~1api~1v2~1list~1goods~1size~1nm/get) `editableSizePrice: true`.    \n",
+        "requestBody": {
+          "$ref": "#/components/requestBodies/SupplierTaskRequestSize"
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/SuccessTaskResponse"
+          },
+          "208": {
+            "$ref": "#/components/responses/Responses208"
+          },
+          "400": {
+            "description": "Неправильный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseError"
+                },
+                "examples": {
+                  "GoodsNumberLimitExceeded": {
+                    "$ref": "#/components/examples/GoodsNumberLimitExceeded"
+                  },
+                  "DuplicatedNmIdInTask": {
+                    "$ref": "#/components/examples/DuplicatedNmIdInTask"
+                  },
+                  "NoGoodsForProcess": {
+                    "$ref": "#/components/examples/NoGoodsForProcess"
+                  },
+                  "FailedToParseData": {
+                    "$ref": "#/components/examples/FailedToParseData"
+                  },
+                  "PriceHasDecimalPlaces": {
+                    "$ref": "#/components/examples/PriceHasDecimalPlaces"
+                  },
+                  "WrongPriceValue": {
+                    "$ref": "#/components/examples/WrongPriceValue"
+                  },
+                  "WrongNmValue": {
+                    "$ref": "#/components/examples/WrongNmValue"
+                  },
+                  "BothDiscountAndPriceAreNotSet": {
+                    "$ref": "#/components/examples/BothDiscountAndPriceAreNotSet"
+                  },
+                  "EmptyData": {
+                    "$ref": "#/components/examples/EmptyData"
+                  },
+                  "NoValidGoodsInTask": {
+                    "$ref": "#/components/examples/NoValidGoodsInTask"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Responses401"
+          },
+          "429": {
+            "$ref": "#/components/responses/ExceededLimitRequests429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Responses500"
+          }
+        }
+      }
+    },
+    "/api/v2/history/tasks": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Состояния загрузок"
+        ],
+        "summary": "Состояние обработанной загрузки",
+        "description": "Возвращает информацию про обработанную загрузку",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/uploadID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ResponseTaskHistory"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorWrongParameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorUnknownUser"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorInternalResponse"
+          }
+        }
+      }
+    },
+    "/api/v2/history/goods/task": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Состояния загрузок"
+        ],
+        "summary": "Детализация обработанной загрузки",
+        "description": "Возвращает информацию о товарах в обработанной загрузке, в том числе, об ошибках в них",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/uploadID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ResponseGoodHistories"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorWrongParameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorUnknownUser"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorInternalResponse"
+          }
+        }
+      }
+    },
+    "/api/v2/buffer/tasks": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Состояния загрузок"
+        ],
+        "summary": "Состояние необработанной загрузки",
+        "description": "Возвращает информацию про загрузку в обработке",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/uploadID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ResponseTaskBuffer"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorWrongParameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorUnknownUser"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorInternalResponse"
+          }
+        }
+      }
+    },
+    "/api/v2/buffer/goods/task": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Состояния загрузок"
+        ],
+        "summary": "Детализация необработанной загрузки",
+        "description": "Возвращает информацию о товарах из загрузки в обработке, в том числе, об ошибках в них",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/uploadID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ResponseGoodBufferHistories"
+          },
+          "400": {
+            "$ref": "#/components/responses/ErrorWrongParameters"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorUnknownUser"
+          },
+          "4XX": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "5XX": {
+            "$ref": "#/components/responses/ErrorInternalResponse"
+          }
+        }
+      }
+    },
+    "/api/v2/list/goods/filter": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Списки товаров"
+        ],
+        "summary": "Получить товары",
+        "description": "Возвращает информацию о товаре по его артикулу. Чтобы получить информацию обо всех товарах, оставьте артикул пустым",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/filterNmID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ResponseGoodsLists"
+          },
+          "400": {
+            "description": "Неправильный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseError"
+                },
+                "examples": {
+                  "SortError": {
+                    "$ref": "#/components/examples/SortError"
+                  },
+                  "InvalidQueryParams": {
+                    "$ref": "#/components/examples/InvalidQueryParams"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Responses401"
+          },
+          "429": {
+            "$ref": "#/components/responses/ExceededLimitRequests429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Responses500"
+          }
+        }
+      }
+    },
+    "/api/v2/list/goods/size/nm": {
+      "servers": [
+        {
+          "url": "https://discounts-prices-api.wb.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Списки товаров"
+        ],
+        "summary": "Получить размеры товара",
+        "description": "Возвращает информацию о всех размерах одного товара. Работает только для товаров из категорий, где можно устанавливать цены отдельно для разных размеров. Для таких товаров в ответе метода [Получить товары по артикулам](./#tag/Spiski-tovarov/paths/~1api~1v2~1list~1goods~1size~1nm/get) `editableSizePrice: true`.\n",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/limit"
+          },
+          {
+            "$ref": "#/components/parameters/offset"
+          },
+          {
+            "$ref": "#/components/parameters/nmID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ResponseSizeLists"
+          },
+          "400": {
+            "description": "Неправильный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseError"
+                },
+                "examples": {
+                  "InvalidQueryParams": {
+                    "$ref": "#/components/examples/InvalidQueryParams"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Responses401"
+          },
+          "429": {
+            "$ref": "#/components/responses/ExceededLimitRequests429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Responses500"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "examples": {
+      "InvalidQueryParams": {
+        "description": "Неправильные параметры запроса",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Invalid query params"
+        }
+      },
+      "GoodsNumberLimitExceeded": {
+        "description": "В запросе слишком много товаров",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Goods number limit exceeded"
+        }
+      },
+      "DuplicatedNmIdInTask": {
+        "description": "В запросе несколько одинаковых `nmid`",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Duplicated nm_id in task"
+        }
+      },
+      "NoGoodsForProcess": {
+        "description": "Цены и скидки такие же, как сейчас",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "No goods for process"
+        }
+      },
+      "FailedToParseData": {
+        "description": "Не удалось обработать данные, проверьте, что запрос правильный",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Failed to parse data"
+        }
+      },
+      "PriceHasDecimalPlaces": {
+        "description": "У цены дробное значение, исправьте на целое",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Price has decimal places"
+        }
+      },
+      "WrongPriceValue": {
+        "description": "Некорректная цена",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Wrong price value"
+        }
+      },
+      "WrongNmValue": {
+        "description": "Неправильный `nmID`",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Wrong nm value"
+        }
+      },
+      "BothDiscountAndPriceAreNotSet": {
+        "description": "Цена и скидка не установлены",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Both discount and price are not set"
+        }
+      },
+      "PriceNotSet": {
+        "description": "Цена не установлена",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Both discount and price are not set"
+        }
+      },
+      "EmptyData": {
+        "description": "Нет данных",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Empty data"
+        }
+      },
+      "NoValidGoodsInTask": {
+        "description": "Таких товаров или размеров нет (например, их удалили)",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "No valid goods in task"
+        }
+      },
+      "SortError": {
+        "description": "Можно сортировать либо по цене, либо по скидке",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Can sort only by price or discount at the same time"
+        }
+      }
+    },
+    "parameters": {
+      "uploadID": {
+        "in": "query",
+        "name": "uploadID",
+        "description": "ID загрузки",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "example": 146567
+        }
+      },
+      "limit": {
+        "in": "query",
+        "name": "limit",
+        "description": "Сколько элементов вывести на одной странице (пагинация). Максимум 1 000 элементов",
+        "schema": {
+          "type": "integer",
+          "format": "uint",
+          "example": 10
+        },
+        "required": true
+      },
+      "offset": {
+        "in": "query",
+        "name": "offset",
+        "description": "Сколько элементов пропустить",
+        "schema": {
+          "type": "integer",
+          "format": "uint",
+          "example": 0
+        }
+      },
+      "nmID": {
+        "in": "query",
+        "name": "nmID",
+        "description": "Артикул Wildberries",
+        "schema": {
+          "type": "integer",
+          "example": 1
+        },
+        "required": true
+      },
+      "filterNmID": {
+        "in": "query",
+        "description": "Артикул Wildberries, по которому искать товар",
+        "name": "filterNmID",
+        "schema": {
+          "type": "integer"
+        },
+        "example": 44589768676
+      }
+    },
+    "requestBodies": {
+      "SupplierTaskRequest": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/components/schemas/Goods"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SupplierTaskRequestSize": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/components/schemas/SizeGoodsBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "HeaderApiKey": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "ResponseError": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "error": {
+            "type": "boolean"
+          },
+          "errorText": {
+            "type": "string"
+          }
+        }
+      },
+      "TaskAlreadyExistsError": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "description": "ID загрузки",
+                "type": "integer"
+              },
+              "alreadyExists": {
+                "description": "Флаг дублирования загрузки: `true` — такая загрузка уже есть\n",
+                "type": "boolean"
+              }
+            }
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Текст ошибки",
+            "type": "string"
+          }
+        }
+      },
+      "TaskCreated": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer",
+                "description": "ID загрузки"
+              },
+              "alreadyExists": {
+                "type": "boolean",
+                "description": "Флаг дублирования загрузки: `true` — такая загрузка уже есть\n",
+                "example": false
+              }
+            }
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean",
+            "example": false
+          },
+          "errorText": {
+            "description": "Текст ошибки",
+            "type": "string",
+            "example": ""
+          }
+        }
+      },
+      "Goods": {
+        "type": "array",
+        "description": "Товары, цены и скидки для них. Максимум 1 000 товаров. Цена и скидка не могут быть пустыми одновременно.\n<br><br>\nЕсли новая цена со скидкой будет хотя бы в 3 раза меньше старой, она попадёт [в карантин](https://seller.wildberries.ru/discount-and-prices/quarantine) и товар будет продаваться по старой цене. Ошибка об этом будет в ответах методов [Состояния загрузок](./#tag/Sostoyaniya-zagruzok)\n<br><br>\nВы можете изменить цену или скидку с помощью API либо вывести товар из карантина [в личном кабинете](https://seller.wildberries.ru/discount-and-prices/quarantine)\n",
+        "items": {
+          "$ref": "#/components/schemas/Good"
+        }
+      },
+      "Good": {
+        "type": "object",
+        "required": [
+          "nmID"
+        ],
+        "properties": {
+          "nmID": {
+            "type": "integer",
+            "example": 123,
+            "description": "Артикул Wildberries"
+          },
+          "price": {
+            "type": "integer",
+            "example": 999,
+            "description": "Цена. Валюту можно получить с помощью метода [Получение списка товаров по артикулам](./#tag/Spiski-tovarov/paths/~1api~1v2~1list~1goods~1filter/get), поле `currencyIsoCode4217`"
+          },
+          "discount": {
+            "type": "integer",
+            "example": 30,
+            "description": "Скидка, %"
+          }
+        }
+      },
+      "SizeGoodsBody": {
+        "description": "Размеры и цены для них. Максимум 1 000 размеров\n<br><br>\nЕсли новая цена со скидкой будет хотя бы в 3 раза меньше старой, она попадёт [в карантин](https://seller.wildberries.ru/discount-and-prices/quarantine) и товар будет продаваться по старой цене. Ошибка об этом будет в ответах методов [Состояния загрузок](./#tag/Sostoyaniya-zagruzok)\n<br><br>\nВы можете изменить цену или скидку с помощью API либо вывести товар из карантина [в личном кабинете](https://seller.wildberries.ru/discount-and-prices/quarantine)\n",
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/SizeGoodReq"
+        }
+      },
+      "SizeGoodReq": {
+        "type": "object",
+        "required": [
+          "nmID",
+          "sizeID",
+          "price"
+        ],
+        "properties": {
+          "nmID": {
+            "type": "integer",
+            "example": 123,
+            "description": "Артикул Wildberries"
+          },
+          "sizeID": {
+            "type": "integer",
+            "example": 98989887,
+            "description": "ID размера. Можно получить с помощью метода [Получение списка товаров по артикулам](./#tag/Spiski-tovarov/paths/~1api~1v2~1list~1goods~1filter/get), поле `sizeID`. В методах контента это поле `chrtID`"
+          },
+          "price": {
+            "type": "integer",
+            "example": 999,
+            "description": "Цена. Валюту можно получить с помощью метода [Получение списка товаров по артикулам](./#tag/Spiski-tovarov/paths/~1api~1v2~1list~1goods~1filter/get), поле `currencyIsoCode4217`"
+          }
+        }
+      },
+      "GoodsList": {
+        "type": "object",
+        "description": "Размеры товара",
+        "properties": {
+          "nmID": {
+            "type": "integer",
+            "description": "Артикул Wildberries",
+            "example": 98486
+          },
+          "vendorCode": {
+            "type": "string",
+            "description": "Артикул продавца",
+            "example": "07326060"
+          },
+          "sizes": {
+            "type": "array",
+            "description": "Размер",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sizeID": {
+                  "type": "integer",
+                  "description": "ID размера. В методах контента это поле `chrtID`",
+                  "format": "int64",
+                  "example": 3123515574
+                },
+                "price": {
+                  "type": "integer",
+                  "description": "Цена",
+                  "example": 500
+                },
+                "discountedPrice": {
+                  "type": "number",
+                  "description": "Цена со скидкой",
+                  "example": 350
+                },
+                "techSizeName": {
+                  "description": "Размер товара",
+                  "type": "string",
+                  "example": "42"
+                }
+              }
+            }
+          },
+          "currencyIsoCode4217": {
+            "type": "string",
+            "description": "Валюта, по стандарту ISO 4217",
+            "example": "RUB"
+          },
+          "discount": {
+            "type": "integer",
+            "description": "Скидка, %",
+            "example": 30
+          },
+          "editableSizePrice": {
+            "description": "Можно ли устанавливать цены отдельно для разных размеров: `true` — можно, `false` — нельзя. Эта возможность зависит от категории товара\n",
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "SizeGood": {
+        "type": "object",
+        "description": "Информация о размере",
+        "properties": {
+          "nmID": {
+            "type": "integer",
+            "example": 123,
+            "description": "Артикул Wildberries"
+          },
+          "sizeID": {
+            "description": "ID размера. Можно получить с помощью метода [Получение списка товаров по артикулам](./#tag/Spiski-tovarov/paths/~1api~1v2~1list~1goods~1filter/get), поле `sizeID`. В методах контента это поле `chrtID`",
+            "type": "integer",
+            "example": 98989887
+          },
+          "vendorCode": {
+            "type": "string",
+            "example": "34552332",
+            "description": "Артикул продавца"
+          },
+          "price": {
+            "type": "integer",
+            "example": 25000,
+            "description": "Цена"
+          },
+          "currencyIsoCode4217": {
+            "type": "string",
+            "description": "Валюта, по стандарту ISO 4217",
+            "example": "RUB"
+          },
+          "discountedPrice": {
+            "type": "number",
+            "example": 14250,
+            "description": "Цена со скидкой"
+          },
+          "discount": {
+            "description": "Скидка, %",
+            "type": "integer",
+            "example": 43
+          },
+          "techSizeName": {
+            "description": "Размер товара",
+            "type": "string",
+            "example": "42"
+          },
+          "editableSizePrice": {
+            "description": "Можно ли устанавливать цены отдельно для разных размеров: `true` — можно, `false` — нельзя. Эта возможность зависит от категории товара\n",
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "GoodBufferHistory": {
+        "type": "object",
+        "properties": {
+          "nmID": {
+            "type": "integer",
+            "example": 544833232,
+            "description": "Артикул Wildberries"
+          },
+          "vendorCode": {
+            "type": "string",
+            "example": "34552332",
+            "description": "Артикул продавца"
+          },
+          "sizeID": {
+            "type": "integer",
+            "example": 54483342,
+            "description": "ID размера. В методах контента это поле `chrtID`"
+          },
+          "techSizeName": {
+            "type": "string",
+            "example": "XXL",
+            "description": "Размер"
+          },
+          "price": {
+            "type": "integer",
+            "example": 1500,
+            "description": "Цена"
+          },
+          "currencyIsoCode4217": {
+            "type": "string",
+            "example": "RUB",
+            "description": "Валюта, по стандарту ISO 4217"
+          },
+          "discount": {
+            "type": "integer",
+            "example": 25,
+            "description": "Скидка, %"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoodStatusBuffer"
+          },
+          "errorText": {
+            "type": "string",
+            "example": null,
+            "description": "Текст ошибки"
+          }
+        }
+      },
+      "GoodHistory": {
+        "type": "object",
+        "properties": {
+          "nmID": {
+            "type": "integer",
+            "example": 544833232,
+            "description": "Артикул Wildberries"
+          },
+          "vendorCode": {
+            "type": "string",
+            "example": "34552332",
+            "description": "Артикул продавца"
+          },
+          "sizeID": {
+            "type": "integer",
+            "example": 54483342,
+            "description": "ID размера. В методах контента это поле `chrtID`"
+          },
+          "techSizeName": {
+            "type": "string",
+            "example": "42",
+            "description": "Размер"
+          },
+          "price": {
+            "type": "integer",
+            "example": 1500,
+            "description": "Цена"
+          },
+          "currencyIsoCode4217": {
+            "type": "string",
+            "example": "RUB",
+            "description": "Валюта, по стандарту ISO 4217"
+          },
+          "discount": {
+            "type": "integer",
+            "example": 25,
+            "description": "Скидка, %"
+          },
+          "status": {
+            "$ref": "#/components/schemas/GoodStatus"
+          },
+          "errorText": {
+            "type": "string",
+            "example": "The product is in quarantine",
+            "description": "Текст ошибки\n\n<blockquote class=\"spoiler\">\n  <p class=\"descr\">Ошибка <code>The product is in quarantine</code> возникает, если новая цена со скидкой хотя бы в 3 раза меньше старой. Вы можете изменить цену или скидку с помощью API либо вывести товар из карантина <a href=\"https://seller.wildberries.ru/discount-and-prices/quarantine\">в личном кабинете</a></p>\n</blockquote>\n"
+          }
+        }
+      },
+      "SupplierTaskMetadata": {
+        "properties": {
+          "uploadID": {
+            "type": "integer",
+            "example": 395643565,
+            "description": "ID загрузки"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatus"
+          },
+          "uploadDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "activationDate": {
+            "$ref": "#/components/schemas/Date1"
+          },
+          "overAllGoodsNumber": {
+            "description": "Всего товаров",
+            "type": "integer"
+          },
+          "successGoodsNumber": {
+            "description": "Товаров без ошибок",
+            "type": "integer"
+          }
+        }
+      },
+      "SupplierTaskMetadataBuffer": {
+        "properties": {
+          "uploadID": {
+            "type": "integer",
+            "example": 395643565,
+            "description": "ID загрузки"
+          },
+          "status": {
+            "$ref": "#/components/schemas/TaskStatusBuffer"
+          },
+          "uploadDate": {
+            "$ref": "#/components/schemas/Date"
+          },
+          "activationDate": {
+            "$ref": "#/components/schemas/Date1"
+          },
+          "overAllGoodsNumber": {
+            "description": "Всего товаров",
+            "type": "integer",
+            "example": 100
+          },
+          "successGoodsNumber": {
+            "description": "Товаров без ошибок (0, потому что загрузка в обработке)",
+            "type": "integer",
+            "example": 0
+          }
+        }
+      },
+      "Date": {
+        "type": "string",
+        "example": "2022-08-21T22:00:13+02:00",
+        "format": "date",
+        "pattern": "YYYY-MM-DDTHH:MM:SSZ",
+        "description": "Дата и время, когда загрузка создана"
+      },
+      "Date1": {
+        "type": "string",
+        "example": "2022-08-21T22:00:13+02:00",
+        "format": "date",
+        "pattern": "YYYY-MM-DDTHH:MM:SSZ",
+        "description": "Дата и время, когда загрузка отправляется в обработку"
+      },
+      "TaskStatus": {
+        "description": "Статус загрузки: \n  * `3` — обработана, в товарах нет ошибок, цены и скидки обновились\n  * `4` — отменена\n  * `5` — обработана, но в товарах есть ошибки. Для товаров без ошибок цены и скидки обновились, а ошибки в остальных товарах можно получить с помощью метода [Детализация обработанной загрузки](#tag/Istoriya-zagruzok/paths/~1api~1v2~1history~1goods~1task/get)\n  * `6` — обработана, но во всех товарах есть ошибки. Их тоже можно получить с помощью метода [Детализация обработанной загрузки](#tag/Istoriya-zagruzok/paths/~1api~1v2~1history~1goods~1task/get)\n",
+        "type": "integer",
+        "example": 3
+      },
+      "TaskStatusBuffer": {
+        "description": "Статус загрузки: `1` — в обработке\n",
+        "type": "integer",
+        "example": 1
+      },
+      "GoodStatus": {
+        "description": "Статус товара: \n  * `2` — товар без ошибок, цена и/или скидка обновилась\n  * `3` — есть ошибки, данные не обновились\n",
+        "type": "integer",
+        "example": 1
+      },
+      "GoodStatusBuffer": {
+        "description": "Статус товара: `1` — в обработке\n",
+        "type": "integer",
+        "example": 1
+      }
+    },
+    "responses": {
+      "ResponseGoodsLists": {
+        "description": "Товары",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "listGoods": {
+                      "description": "Информация о товарах",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GoodsList"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ResponseGoodHistories": {
+        "description": "Информация о товарах в загрузке",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "uploadID": {
+                      "type": "integer",
+                      "description": "ID загрузки",
+                      "example": 3235236546
+                    },
+                    "historyGoods": {
+                      "type": "array",
+                      "description": "Информация о товарах в загрузке",
+                      "items": {
+                        "$ref": "#/components/schemas/GoodHistory"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ResponseGoodBufferHistories": {
+        "description": "Информация о товарах в загрузке",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "uploadID": {
+                      "type": "integer",
+                      "description": "ID загрузки",
+                      "example": 3235236546
+                    },
+                    "bufferGoods": {
+                      "type": "array",
+                      "description": "Информация о товарах в загрузке",
+                      "items": {
+                        "$ref": "#/components/schemas/GoodBufferHistory"
+                      }
+                    }
+                  }
+                },
+                "error": {
+                  "type": "boolean",
+                  "description": "Флаг ошибки",
+                  "example": false
+                },
+                "errorText": {
+                  "type": "string",
+                  "description": "Текст ошибки",
+                  "example": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      "ResponseTaskHistory": {
+        "description": "Состояние загрузки",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/components/schemas/SupplierTaskMetadata"
+                },
+                "error": {
+                  "type": "boolean",
+                  "description": "Флаг ошибки",
+                  "example": false
+                },
+                "errorText": {
+                  "description": "Текст ошибки\n\n<blockquote class=\"spoiler\">\n  <p class=\"descr\">Ошибка <code>The product is in quarantine</code> возникает, если новая цена со скидкой хотя бы в 3 раза меньше старой. Вы можете изменить цену или скидку с помощью API либо вывести товар из карантина <a href=\"https://seller.wildberries.ru/discount-and-prices/quarantine\">в личном кабинете</a></p>\n</blockquote>\n",
+                  "type": "string",
+                  "example": "The product is in quarantine"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ResponseTaskBuffer": {
+        "description": "Состояние загрузки",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "$ref": "#/components/schemas/SupplierTaskMetadataBuffer"
+                },
+                "error": {
+                  "type": "boolean",
+                  "description": "Флаг ошибки",
+                  "example": false
+                },
+                "errorText": {
+                  "type": "string",
+                  "description": "Текст ошибки",
+                  "example": ""
+                }
+              }
+            }
+          }
+        }
+      },
+      "ResponseSizeLists": {
+        "description": "Размеры",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "properties": {
+                    "listGoods": {
+                      "description": "Размеры товара",
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SizeGood"
+                      }
+                    }
+                  }
+                },
+                "error": {
+                  "description": "Флаг ошибки",
+                  "type": "boolean",
+                  "example": false
+                },
+                "errorText": {
+                  "description": "Текст ошибки",
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SuccessTaskResponse": {
+        "description": "Успешно",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/TaskCreated"
+            }
+          }
+        }
+      },
+      "Responses401": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ResponseError"
+            },
+            "examples": {
+              "AuthorizationError": {
+                "description": "Ошибка авторизации",
+                "value": {
+                  "data": null,
+                  "error": true,
+                  "errorText": "Authorization error"
+                }
+              },
+              "UnknownMethod": {
+                "description": "Неизвестный метод",
+                "value": {
+                  "data": {
+                    "type": "object",
+                    "nullable": true
+                  },
+                  "error": true,
+                  "errorText": "Unknown method"
+                }
+              },
+              "AccessDenied": {
+                "description": "Доступ запрещён",
+                "value": {
+                  "data": {
+                    "type": "object",
+                    "nullable": true
+                  },
+                  "error": true,
+                  "errorText": "Access denied"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Responses500": {
+        "description": "Внутренняя ошибка сервиса"
+      },
+      "ExceededLimitRequests429": {
+        "description": "Слишком много запросов"
+      },
+      "Responses208": {
+        "description": "",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/TaskAlreadyExistsError"
+            },
+            "examples": {
+              "TaskAlreadyExists": {
+                "description": "Такая загрузка уже есть\n",
+                "value": {
+                  "data": {
+                    "id": 1111111,
+                    "alreadyExists": true
+                  },
+                  "error": false,
+                  "errorText": "Task already exists"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "description": "Другие ошибки",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "nullable": true
+                },
+                "error": {
+                  "type": "boolean"
+                },
+                "errorText": {
+                  "type": "string",
+                  "example": "Unknown error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorInternalResponse": {
+        "description": "Прочие ошибки",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "nullable": true
+                },
+                "error": {
+                  "type": "boolean"
+                },
+                "errorText": {
+                  "type": "string",
+                  "example": "Internal server error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorUnknownUser": {
+        "description": "Ошибка авторизации",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "nullable": true
+                },
+                "error": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "errorText": {
+                  "type": "string",
+                  "example": "Unknown user"
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorWrongParameters": {
+        "description": "Неправильный запрос",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "data": {
+                  "type": "object",
+                  "nullable": true
+                },
+                "error": {
+                  "type": "boolean",
+                  "example": true
+                },
+                "errorText": {
+                  "type": "string",
+                  "example": "Invalid query params"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
