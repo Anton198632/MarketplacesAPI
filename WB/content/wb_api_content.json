@@ -1,0 +1,5056 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Описание API Контента",
+    "version": "",
+    "description": "\n<dl>\n<dt>Словарь сокращений:</dt>\n<dd>КТ — карточка товара</dd>\n<dd>НМ — номенклатура</dd>\n</dl>\nОграничения по количеству запросов:\n<dd>Допускается максимум 100 запросов в минуту на методы контента в целом.</dd>\n\n<br>\nПубличное API Контента создано для синхронизации данных между серверами Wildberries и серверами продавцов.\n<br>\nВы загружаете данные на свои носители, работаете с ними на своих мощностях и синхронизируетесь с нашими серверами по мере необходимости.\n<br>\n<code>Не допускается использование API Контента в качестве внешней базы данных. При превышении лимитов на запросы доступ к API будет ограничен.</code>\n"
+  },
+  "security": [
+    {
+      "HeaderApiKey": []
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Контент",
+      "tags": [
+        "Загрузка",
+        "Просмотр",
+        "Конфигуратор",
+        "Медиафайлы",
+        "Теги",
+        "Корзина"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Загрузка",
+      "description": "Создание и редактирование КТ"
+    },
+    {
+      "name": "Просмотр",
+      "description": "Получение информации о созданных КТ, НМ и размерах"
+    },
+    {
+      "name": "Конфигуратор"
+    },
+    {
+      "name": "Медиафайлы",
+      "description": "Работа с медиафайлами"
+    },
+    {
+      "name": "Теги",
+      "description": "Сервис для работы с тегами КТ. Теги предназначены для быстрого поиска КТ в личном кабинете"
+    },
+    {
+      "name": "Корзина"
+    }
+  ],
+  "paths": {
+    "/content/v2/cards/upload": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Загрузка"
+        ],
+        "summary": "Создание карточки товара",
+        "description": "Создание карточки товара происходит асинхронно, при отправке запроса на создание карточки ваш запрос становится в очередь на создание.\n\n\n**Внимание**. Карточка считается созданной, если создалась хотя бы одна номенклатура в ней. Если во время обработки запроса в очереди выявляются ошибки, то номенклатура считается ошибочной.\n\n\nКак создать карточку:\n\n  1. Получите список всех категорий с помощью метода `Родительские категории товаров`\n  2. Получите список доступных предметов (подкатегорий) с помощью метода `Список предметов (подкатегорий)`\n  3. Получите характеристики, которые можно задавать в этом предмете (подкатегории), с помощью метода `Характеристики предмета (подкатегории)`. Для характеристик Цвет, Страна производства, Сезон, Ставка НДС, ТНВЭД используйте значения из раздела `Конфигуратор`.\n  4. Отправьте запрос. Если ответ Успешно (200), но какие-то карточки не создались, проверьте ошибки с помощью метода `Список несозданных номенклатур (НМ) с ошибками`.\n       \n\nВ одном запросе можно создать максимум 100 карточек (`imtID`) и по 30 номенклатур (`nmID`) в каждой. Максимальный размер запроса 10 Мб.\n\nГабариты товаров можно указать только в **сантиметрах**.\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "subjectID",
+                    "variants"
+                  ],
+                  "properties": {
+                    "subjectID": {
+                      "type": "integer",
+                      "description": "ID предмета"
+                    },
+                    "variants": {
+                      "description": "Массив вариантов товара. В каждой КТ может быть не более 30 вариантов (НМ)",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "vendorCode"
+                        ],
+                        "properties": {
+                          "brand": {
+                            "type": "string",
+                            "description": "Бренд"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Наименование товара"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Описание товара. Максимальное количество символов зависит от категории товара. Стандарт — 2000, минимум — 1000, максимум — 5000.<br>\nПодробно о правилах описания в **Правилах заполнения карточки товара** в разделе [Инструкции](https://seller.wildberries.ru/training) на портале продавцов.\n"
+                          },
+                          "vendorCode": {
+                            "type": "string",
+                            "description": "Артикул продавца"
+                          },
+                          "dimensions": {
+                            "description": "Габариты упаковки товара. Указывать в **сантиметрах** для любого товара. \n<br> \nЕсли не указать структуру dimensions в запросе, то она сгенерируется системой автоматически с нулевыми значениями длины, ширины, высоты\n",
+                            "type": "object",
+                            "properties": {
+                              "length": {
+                                "type": "integer",
+                                "description": "Длина, см"
+                              },
+                              "width": {
+                                "type": "integer",
+                                "description": "Ширина, см"
+                              },
+                              "height": {
+                                "type": "integer",
+                                "description": "Высота, см"
+                              }
+                            }
+                          },
+                          "sizes": {
+                            "type": "array",
+                            "description": "Массив с размерами. <br> \nЕсли для размерного товара (обувь, одежда и др.) не указать этот массив, то системой в карточке он будет сгенерирован автоматически с `techSize` = \"A\" и `wbSize` = \"1\" и баркодом.\n",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "techSize": {
+                                  "type": "string",
+                                  "description": "Размер товара (XL, 45 и др.)"
+                                },
+                                "wbSize": {
+                                  "type": "string",
+                                  "description": "Российский размер товара"
+                                },
+                                "price": {
+                                  "type": "integer",
+                                  "description": "Цена товара"
+                                },
+                                "skus": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Баркод. Если не указать, сгенерируется системой автоматически."
+                                }
+                              }
+                            }
+                          },
+                          "characteristics": {
+                            "type": "array",
+                            "description": "Массив характеристик товара",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "id",
+                                "value"
+                              ],
+                              "properties": {
+                                "id": {
+                                  "type": "integer",
+                                  "description": "Идентификатор характеристики"
+                                },
+                                "value": {
+                                  "description": "Значение характеристики. Тип значения зависит от типа характеристики"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "examples": {
+                "creatingOneCard": {
+                  "$ref": "#/components/examples/creatingOneCard"
+                },
+                "creatingMergedCards": {
+                  "$ref": "#/components/examples/creatingMergedCards"
+                },
+                "creatingGroupOfIndividualCards": {
+                  "$ref": "#/components/examples/creatingGroupOfIndividualCards"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCardCreate"
+                },
+                "example": {
+                  "data": null,
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                },
+                "examples": {
+                  "InvalidRequestFormatContent": {
+                    "$ref": "#/components/examples/InvalidRequestFormatContent"
+                  },
+                  "CardCreatedWithoutVendorCode": {
+                    "$ref": "#/components/examples/CardCreatedWithoutVendorCode"
+                  },
+                  "CardsVendorCodeUsedInOtherCards": {
+                    "$ref": "#/components/examples/CardsVendorCodeUsedInOtherCards"
+                  },
+                  "ThisCategoryDoesNotExist": {
+                    "$ref": "#/components/examples/ThisCategoryDoesNotExist"
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен лимит объёма данных в запросе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "BodySizeExceedsTheGivenLimit": {
+                    "$ref": "#/components/examples/BodySizeExceedsTheGivenLimit"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/update": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Загрузка"
+        ],
+        "summary": "Редактирование КТ",
+        "description": "Обновляет карточку товара. Данные для обновления можно получить с помощью метода [Список номенклатур (НМ)](./#tag/Prosmotr/paths/~1content~1v2~1get~1cards~1list/post)\n\nНельзя редактировать или удалить баркоды, но можно добавить баркод к существующему. Параметры `photos`, `video` и `tags` передавать не обязательно, их нельзя редактировать или удалять в этом методе.\n\nЕсли ответ Успешно (200), но какие-то карточки не изменились, проверьте ошибки с помощью метода `Список несозданных номенклатур (НМ) с ошибками`.\n\nВ одном запросе можно отредактировать максимум 3000 номенклатур (`nmID`). Максимальный размер запроса 10 Мб.\n\nГабариты товаров можно указать только в **сантиметрах**.\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "nmID",
+                    "vendorCode",
+                    "sizes"
+                  ],
+                  "properties": {
+                    "nmID": {
+                      "type": "integer",
+                      "description": "Артикул WB"
+                    },
+                    "vendorCode": {
+                      "type": "string",
+                      "description": "Артикул продавца"
+                    },
+                    "brand": {
+                      "type": "string",
+                      "description": "Бренд"
+                    },
+                    "title": {
+                      "type": "string",
+                      "description": "Наименование товара"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Описание товара. Максимальное количество символов зависит от категории товара. Стандарт — 2000, минимум — 1000, максимум — 5000.<br>\nПодробно о правилах описания в **Правилах заполнения карточки товара** в разделе [Инструкции](https://seller.wildberries.ru/training) на портале продавцов.\n"
+                    },
+                    "dimensions": {
+                      "description": "Габариты упаковки товара. Указывать в **сантиметрах** для любого товара.\n",
+                      "type": "object",
+                      "properties": {
+                        "length": {
+                          "type": "integer",
+                          "description": "Длина, см"
+                        },
+                        "width": {
+                          "type": "integer",
+                          "description": "Ширина, см"
+                        },
+                        "height": {
+                          "type": "integer",
+                          "description": "Высота, см"
+                        }
+                      }
+                    },
+                    "characteristics": {
+                      "description": "Характеристики товара",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "ID характеристики"
+                          },
+                          "value": {
+                            "description": "Значение характеристики. Тип значения зависит от типа характеристики."
+                          }
+                        }
+                      }
+                    },
+                    "sizes": {
+                      "type": "array",
+                      "description": "Массив размеров артикула. <br> Для безразмерного товара все равно нужно передавать данный массив без параметров (wbSize и techSize), но с баркодом.                          \n",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "chrtID": {
+                            "type": "integer",
+                            "description": "Числовой идентификатор размера для данного артикула Wildberries\nОбязателен к заполнению для существующих размеров.\nДля добавляемых размеров не указывается.\n"
+                          },
+                          "techSize": {
+                            "type": "string",
+                            "description": "Размер товара (XL, S, 45 и др.)"
+                          },
+                          "wbSize": {
+                            "type": "string",
+                            "description": "Российский размер товара"
+                          },
+                          "skus": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "Баркод"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": [
+                  {
+                    "nmID": 11111111,
+                    "vendorCode": "wbiz72wmro",
+                    "brand": "",
+                    "title": "Свитер женский оверсайз с горлом",
+                    "description": "12345",
+                    "dimensions": {
+                      "length": 0,
+                      "width": 0,
+                      "height": 0
+                    },
+                    "characteristics": [
+                      {
+                        "id": 14177450,
+                        "value": [
+                          "хлопок 50% акрил 50%"
+                        ]
+                      },
+                      {
+                        "id": 50,
+                        "value": [
+                          "свободный крой"
+                        ]
+                      }
+                    ],
+                    "sizes": [
+                      {
+                        "chrtID": 12345678,
+                        "techSize": "ONE SIZE",
+                        "wbSize": "78-90",
+                        "skus": [
+                          "123487653460134"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Карточка обновлена",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCardCreate"
+                },
+                "example": {
+                  "data": null,
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен лимит объёма данных в запросе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "BodySizeExceedsTheGivenLimit": {
+                    "$ref": "#/components/examples/BodySizeExceedsTheGivenLimit"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/upload/add": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Загрузка"
+        ],
+        "summary": "Добавление НМ к КТ",
+        "description": "Метод позволяет добавить к карточке товара новую номенклатуру. <span class=\"newM\">new</span> <br> \nДобавление НМ к КТ происходит асинхронно, после отправки запрос становится в очередь на обработку.<br> \n`Важно!` Если после успешной отправки запроса номенклатура не создалась, то необходимо проверить раздел \"Список несозданных НМ с ошибками\". <br> \nДля того чтобы убрать НМ из ошибочных, необходимо повторно сделать запрос с исправленными ошибками.<br>\nМаксимальный размер запроса 10 Мб.\n\nГабариты товаров можно указать только в **сантиметрах**.\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "imtID": {
+                    "type": "integer",
+                    "description": "imtID КТ, к которой добавляется НМ"
+                  },
+                  "cardsToAdd": {
+                    "description": "Структура добавляемой НМ",
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "vendorCode"
+                      ],
+                      "properties": {
+                        "brand": {
+                          "type": "string",
+                          "description": "Бренд"
+                        },
+                        "vendorCode": {
+                          "type": "string",
+                          "description": "Артикул продавца"
+                        },
+                        "title": {
+                          "type": "string",
+                          "description": "Наименование товара"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Описание товара. Максимальное количество символов зависит от категории товара. Стандарт — 2000, минимум — 1000, максимум — 5000.<br>\nПодробно о правилах описания в **Правилах заполнения карточки товара** в разделе [Инструкции](https://seller.wildberries.ru/training) на портале продавцов.\n"
+                        },
+                        "dimensions": {
+                          "description": "Габариты упаковки товара. Указывать в **сантиметрах** для любого товара. \n<br> \nЕсли не указать структуру dimensions в запросе, то она сгенерируется системой автоматически с нулевыми значениями длины, ширины, высоты\n",
+                          "type": "object",
+                          "properties": {
+                            "length": {
+                              "type": "integer",
+                              "description": "Длина, см"
+                            },
+                            "width": {
+                              "type": "integer",
+                              "description": "Ширина, см"
+                            },
+                            "height": {
+                              "type": "integer",
+                              "description": "Высота, см"
+                            }
+                          }
+                        },
+                        "characteristics": {
+                          "description": "Характеристики товара",
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer",
+                                "description": "ID характеристики"
+                              },
+                              "value": {
+                                "description": "Значение характеристики. Тип значения зависит от типа характеристики"
+                              }
+                            }
+                          }
+                        },
+                        "sizes": {
+                          "type": "array",
+                          "description": "Массив с размерами. <br> \nЕсли для размерного товара (обувь, одежда и др.) не указать этот массив, то системой в карточке он будет сгенерирован автоматически с `techSize` = \"A\" и `wbSize` = \"1\" и баркодом.\n",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "techSize": {
+                                "type": "string",
+                                "description": "Размер товара (XL, 42 и др.)"
+                              },
+                              "wbSize": {
+                                "type": "string",
+                                "description": "Российский размер товара"
+                              },
+                              "price": {
+                                "type": "integer",
+                                "description": "Цена товара"
+                              },
+                              "skus": {
+                                "description": "Баркод",
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "imtID": 987654321,
+                "cardsToAdd": [
+                  {
+                    "vendorCode": "myVariant1",
+                    "title": "Наименование товара",
+                    "description": "Описание товара",
+                    "brand": "Бренд",
+                    "dimensions": {
+                      "length": 55,
+                      "width": 40,
+                      "height": 15
+                    },
+                    "characteristics": [
+                      {
+                        "id": 12,
+                        "value": [
+                          "Russian flag"
+                        ]
+                      },
+                      {
+                        "id": 25471,
+                        "value": 1300
+                      },
+                      {
+                        "id": 14177449,
+                        "value": [
+                          "blue"
+                        ]
+                      }
+                    ],
+                    "sizes": [
+                      {
+                        "skus": [
+                          "12345678"
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "vendorCode": "myVariant2",
+                    "title": "Наименование товара",
+                    "description": "Описание товаров",
+                    "brand": "Бренд",
+                    "dimensions": {
+                      "length": 55,
+                      "width": 40,
+                      "height": 15
+                    },
+                    "characteristics": [
+                      {
+                        "id": 12,
+                        "value": [
+                          "Russian flag"
+                        ]
+                      },
+                      {
+                        "id": 25471,
+                        "value": 1300
+                      },
+                      {
+                        "id": 14177449,
+                        "value": [
+                          "blue"
+                        ]
+                      }
+                    ],
+                    "sizes": [
+                      {
+                        "skus": [
+                          "222222222222"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCardCreate"
+                },
+                "example": {
+                  "data": null,
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                },
+                "examples": {
+                  "InvalidRequestFormatContent": {
+                    "$ref": "#/components/examples/InvalidRequestFormatContent"
+                  },
+                  "CardCreatedWithoutVendorCode": {
+                    "$ref": "#/components/examples/CardCreatedWithoutVendorCode"
+                  },
+                  "CardsVendorCodeUsedInOtherCards": {
+                    "$ref": "#/components/examples/CardsVendorCodeUsedInOtherCards"
+                  },
+                  "ThisCategoryDoesNotExist": {
+                    "$ref": "#/components/examples/ThisCategoryDoesNotExist"
+                  }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен лимит объёма данных в запросе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "BodySizeExceedsTheGivenLimit": {
+                    "$ref": "#/components/examples/BodySizeExceedsTheGivenLimit"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/moveNm": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "tags": [
+          "Загрузка"
+        ],
+        "summary": "Объединение / Разъединение НМ",
+        "description": "Метод позволяет объединять номенклатуры (`nmID`) под одним `imtID` и разъединять их.<br>\n\nДля объединения НМ необходимо отправить запрос со списком НМ с заполненным параметром `targetIMT` в теле запроса. \nПри этом все НМ объединятся под `imtID` указанном в `targetIMT`. <br>\n<br>\nЧтобы отсоединить НМ от карточки, необходимо передать эту НМ без параметра `targetIMT` в теле запроса.<br>\nПри этом для передаваемой НМ создается новый `imtID`. <br>\nЕсли в запросе на <b>разъединение</b> передается несколько НМ, то все они автоматически <b>объединятся</b> под <b>одним</b> новым `imtID`. <br>\nЧтобы присвоить каждой НМ уникальный `imtID` необходимо передавать по одной НМ за запрос.\nДля НМ, не участвующих в запросе, никаких изменений не происходит.<br>\nМаксимальный размер запроса 10 Мб.<br>\n<br>\n`ВАЖНО:` Объединить можно только номенклатуры с одинаковыми предметами.<br>\n`ВАЖНО:` В одной КТ (под одним `imtID`) не может быть больше 30 номенклатур (`nmID`).\n",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/requestMoveNmsImtConn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/requestMoveNmsImtDisconn"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успех",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCardCreate"
+                },
+                "example": {
+                  "data": null,
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный формат запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/responseContentError1"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseCardCreate"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseIncorrectDate"
+                    }
+                  ]
+                },
+                "examples": {
+                  "responseExceededLimit": {
+                    "$ref": "#/components/examples/responseExceededLimit"
+                  },
+                  "responseCombining": {
+                    "$ref": "#/components/examples/responseCombining"
+                  },
+                  "responseIncorrectRequestFormat": {
+                    "$ref": "#/components/examples/responseIncorrectRequestFormat"
+                  },
+                  "responseNonExistentNmId": {
+                    "$ref": "#/components/examples/responseNonExistentNmId"
+                  },
+                  "responseNonExistentImt": {
+                    "$ref": "#/components/examples/responseNonExistentImt"
+                  },
+                  "responseCardCreate1": {
+                    "$ref": "#/components/examples/responseCardCreate1"
+                  },
+                  "responseDuplicateRequests": {
+                    "$ref": "#/components/examples/responseDuplicateRequests"
+                  },
+                  "responseAllCardsInSameGroup": {
+                    "$ref": "#/components/examples/responseAllCardsInSameGroup"
+                  },
+                  "responseIncorrectBeginDate": {
+                    "$ref": "#/components/examples/responseIncorrectBeginDate"
+                  },
+                  "responseIncorrectEndDate": {
+                    "$ref": "#/components/examples/responseIncorrectEndDate"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCardCreate"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Превышен лимит объёма данных в запросе",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "BodySizeExceedsTheGivenLimit": {
+                    "$ref": "#/components/examples/BodySizeExceedsTheGivenLimit"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка сервера",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCardCreate"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/barcodes": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Генерация баркодов",
+        "description": "Метод позволяет сгенерировать массив уникальных баркодов для создания размера НМ в КТ.",
+        "tags": [
+          "Загрузка"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "count": {
+                    "description": "Кол-во баркодов которые надо сгенерировать, максимальное доступное количество баркодов для генерации - `5 000`",
+                    "type": "integer",
+                    "example": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "description": "Массив сгенерированных баркодов",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "5032781145187"
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/get/cards/list": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "tags": [
+          "Просмотр"
+        ],
+        "summary": "Список номенклатур (НМ)",
+        "description": "Метод позволяет получить список созданных НМ с фильтрацией по разным параметрам, пагинацией и сортировкой. \n<br> *Важно*. Карточки, находящиеся в корзине, в ответе метода не выдаются. <br> Получить такие карточки можно только методом \"Список НМ, находящихся в корзине\".<br> <br>Порядок работы с `get/cards/list`: <br> Чтобы получить полный список номенклатур, <b>если их больше 100</b>, необходимо воспользоваться пагинацией.\n  <ol>\n    <li>Сделать первый запрос (все указанные ниже параметры обязательны): <br>\n      <pre style=\"background-color: rgb(38 50 56 / 5%); color: #e53935\">\n        {\n          \"settings\": {                      \n            \"cursor\": {\n              \"limit\": 100\n            },\n            \"filter\": {\n              \"withPhoto\": -1\n            }\n          }\n        }</pre>                               \n    </li>\n    <li>Пройти в конец полученного списка номенклатур, скопировать из <code>cursor</code> две строки:\n      <ul>\n        <li><code>\"updatedAt\": \"***\"</code>,</li>\n        <li><code>\"nmID\": ***</code>,</li>\n      </ul>\n    <li>Вставить скопированные строки в <code>cursor</code> запроса, повторить вызов метода. </li>\n    <li>Повторять пункты <b>2</b> и <b>3</b>, пока <code>total</code> в ответе не станет меньше чем <code>limit</code> в запросе.\n      <br>Это будет означать, что Вы получили все карточки.\n  </ol>\n  <br> По желанию можно добавить поиск и сортировку. См описание в <b>Request Body schema</b>\n  <br> В <b>Request samples</b> представлен пример запроса со всеми возможными параметрами. \n",
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "ru"
+            },
+            "description": "Язык для перевода полей ответа `name`, `value` и `object`:  `ru` - русский, `en` - английский, `zh` - китайский.\n\nНе используется в песочнице.  \n"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "settings": {
+                    "type": "object",
+                    "description": "Настройки",
+                    "properties": {
+                      "sort": {
+                        "description": "Параметр сортировки",
+                        "type": "object",
+                        "properties": {
+                          "ascending": {
+                            "type": "boolean",
+                            "description": "Сортировать по полю **updatedAt** (`false` - по убыванию, `true` - по возрастанию)"
+                          }
+                        }
+                      },
+                      "filter": {
+                        "description": "Параметры фильтрации",
+                        "type": "object",
+                        "properties": {
+                          "withPhoto": {
+                            "type": "integer",
+                            "description": "Фильтр по фото:\n  \n  * `0` — только карточки без фото\n  * `1` — только карточки с фото\n  * `-1` — все карточки товара\n"
+                          },
+                          "textSearch": {
+                            "type": "string",
+                            "description": "Поиск по артикулу продавца, артикулу WB, баркоду"
+                          },
+                          "tagIDs": {
+                            "type": "array",
+                            "description": "Поиск по ID тегов",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "allowedCategoriesOnly": {
+                            "description": "Фильтр по категории. `true` - только разрешённые, `false` - все. Не используется в песочнице.",
+                            "type": "boolean"
+                          },
+                          "objectIDs": {
+                            "type": "array",
+                            "description": "Поиск по id предметов",
+                            "items": {
+                              "type": "integer"
+                            }
+                          },
+                          "brands": {
+                            "type": "array",
+                            "description": "Поиск по брендам",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "imtID": {
+                            "description": "Поиск по идентификатору КТ",
+                            "type": "integer"
+                          }
+                        }
+                      },
+                      "cursor": {
+                        "description": "Курсор\n",
+                        "type": "object",
+                        "properties": {
+                          "limit": {
+                            "type": "integer",
+                            "description": "Сколько КТ выдать в ответе."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "settings": {
+                  "sort": {
+                    "ascending": false
+                  },
+                  "filter": {
+                    "textSearch": "",
+                    "allowedCategoriesOnly": true,
+                    "tagIDs": [],
+                    "objectIDs": [],
+                    "brands": [],
+                    "imtID": 0,
+                    "withPhoto": -1
+                  },
+                  "cursor": {
+                    "updatedAt": "",
+                    "nmID": 0,
+                    "limit": 11
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ответ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cards": {
+                      "type": "array",
+                      "description": "Список КТ",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "nmID": {
+                            "type": "integer",
+                            "description": "Артикул WB"
+                          },
+                          "imtID": {
+                            "type": "integer",
+                            "description": "Идентификатор КТ. <br> Артикулы WB из одной КТ будут иметь одинаковый imtID"
+                          },
+                          "nmUUID": {
+                            "type": "string",
+                            "format": "uuid",
+                            "description": "Внутренний технический идентификатор товара"
+                          },
+                          "subjectID": {
+                            "type": "integer",
+                            "description": "Идентификатор предмета"
+                          },
+                          "vendorCode": {
+                            "type": "string",
+                            "description": "Артикул продавца"
+                          },
+                          "subjectName": {
+                            "type": "string",
+                            "description": "Название предмета"
+                          },
+                          "brand": {
+                            "type": "string",
+                            "description": "Бренд"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "Наименование товара"
+                          },
+                          "photos": {
+                            "type": "array",
+                            "description": "Массив фото",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "big": {
+                                  "description": "URL фото `900х1200`",
+                                  "type": "string"
+                                },
+                                "c246x328": {
+                                  "description": "URL фото `248х328`",
+                                  "type": "string"
+                                },
+                                "c516x688": {
+                                  "description": "URL фото `516х688`",
+                                  "type": "string"
+                                },
+                                "square": {
+                                  "description": "URL фото `600х600`",
+                                  "type": "string"
+                                },
+                                "tm": {
+                                  "description": "URL фото `75х100`",
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "video": {
+                            "type": "string",
+                            "description": "URL видео"
+                          },
+                          "dimensions": {
+                            "description": "Габариты упаковки товара, см",
+                            "type": "object",
+                            "properties": {
+                              "length": {
+                                "type": "integer",
+                                "description": "Длина, см"
+                              },
+                              "width": {
+                                "type": "integer",
+                                "description": "Ширина, см"
+                              },
+                              "height": {
+                                "type": "integer",
+                                "description": "Высота, см"
+                              }
+                            }
+                          },
+                          "characteristics": {
+                            "type": "array",
+                            "description": "Характеристики",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer",
+                                  "description": "Идентификатор характеристики"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Название характеристики"
+                                },
+                                "value": {
+                                  "description": "Значение характеристики. Тип значения зависит от типа характеристики"
+                                }
+                              }
+                            }
+                          },
+                          "sizes": {
+                            "type": "array",
+                            "description": "Размеры товара",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "chrtID": {
+                                  "type": "integer",
+                                  "description": "Числовой идентификатор размера для данного артикула WB"
+                                },
+                                "techSize": {
+                                  "type": "string",
+                                  "description": "Размер товара (А, XXL, 57 и др.)"
+                                },
+                                "wbSize": {
+                                  "type": "string",
+                                  "description": "Российский размер товара"
+                                },
+                                "skus": {
+                                  "type": "array",
+                                  "description": "Баркод товара",
+                                  "items": {
+                                    "type": "string",
+                                    "example": "12345Ejf5"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "tags": {
+                            "description": "Теги",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer",
+                                  "description": "Идентификатор тега"
+                                },
+                                "name": {
+                                  "type": "string",
+                                  "description": "Название тега"
+                                },
+                                "color": {
+                                  "type": "string",
+                                  "description": "Цвет тега. <dl> <dt>Доступные цвета:</dt> <dd><code>D1CFD7</code> - серый</dd> <dd><code>FEE0E0</code> - красный</dd> <dd><code>ECDAFF</code> - фиолетовый</dd> <dd><code>E4EAFF</code> - синий</dd> <dd><code>DEF1DD</code> - зеленый</dd> <dd><code>FFECC7</code> - желтый</dd> </dl>        \n"
+                                }
+                              }
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "description": "Дата создания"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "description": "Дата изменения"
+                          }
+                        }
+                      }
+                    },
+                    "cursor": {
+                      "type": "object",
+                      "description": "Пагинатор",
+                      "properties": {
+                        "updatedAt": {
+                          "type": "string",
+                          "description": "Дата с которой надо запрашивать следующий список КТ"
+                        },
+                        "nmID": {
+                          "type": "integer",
+                          "description": "Номер Артикула WB с которой надо запрашивать следующий список КТ"
+                        },
+                        "total": {
+                          "type": "integer",
+                          "description": "Кол-во возвращенных КТ"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "cards": [
+                    {
+                      "nmID": 12345678,
+                      "imtID": 123654789,
+                      "nmUUID": "01bda0b1-5c0b-736c-b2be-d0a6543e9be",
+                      "subjectID": 7771,
+                      "subjectName": "AKF системы",
+                      "vendorCode": "wb7f6mumjr1",
+                      "brand": "",
+                      "title": "",
+                      "description": "",
+                      "photos": [
+                        {
+                          "big": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/big/1.webp",
+                          "c246x328": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/c246x328/1.webp",
+                          "c516x688": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/c516x688/1.webp",
+                          "square": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/square/1.webp",
+                          "tm": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/tm/1.webp"
+                        }
+                      ],
+                      "video": "https://video.wildberries.ru/video/new/155260000/155260136.mp4",
+                      "dimensions": {
+                        "length": 0,
+                        "width": 0,
+                        "height": 0
+                      },
+                      "characteristics": [
+                        {
+                          "id": 14177449,
+                          "name": "Цвет",
+                          "value": [
+                            "красно-сиреневый"
+                          ]
+                        }
+                      ],
+                      "sizes": [
+                        {
+                          "chrtID": 316399238,
+                          "techSize": "0",
+                          "skus": [
+                            "987456321654"
+                          ]
+                        }
+                      ],
+                      "tags": [
+                        {
+                          "id": 592569,
+                          "name": "Популярный",
+                          "color": "D1CFD7"
+                        }
+                      ],
+                      "createdAt": "2023-12-06T11:17:00.96577Z",
+                      "updatedAt": "2023-12-06T11:17:00.96577Z"
+                    }
+                  ],
+                  "cursor": {
+                    "updatedAt": "2023-12-06T11:17:00.96577Z",
+                    "nmID": 123654123,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/error/list": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Список несозданных номенклатур (НМ) с ошибками",
+        "description": "Метод позволяет получить список НМ и список ошибок которые произошли во время создания КТ. <br>`ВАЖНО`: Для того чтобы убрать НМ из ошибочных, надо повторно сделать запрос с исправленными ошибками на создание КТ.\n",
+        "tags": [
+          "Просмотр"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            },
+            "description": "\nПараметр выбора языка значений полей ответа (для которых предусмотрена мультиязычность). <span class=\"new\">new</span>\n\nНе используется в песочнице.\n"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "object": {
+                            "description": "Категория для который создавалось КТ с данной НМ",
+                            "type": "string",
+                            "example": "Блузки"
+                          },
+                          "vendorCode": {
+                            "description": "Артикул продавца",
+                            "type": "string",
+                            "example": "6000000001"
+                          },
+                          "updateAt": {
+                            "description": "Дата и время запроса на создание КТ с данным НМ",
+                            "type": "string",
+                            "example": "2022-06-15T14:37:13Z"
+                          },
+                          "errors": {
+                            "description": "Список ошибок из-за которых не обработался запрос на создание КТ с данным НМ",
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "example": "Поля Рос. размер, Размер обязательны для заполнения"
+                            }
+                          },
+                          "objectID": {
+                            "description": "Идентификатор предмета",
+                            "type": "integer",
+                            "example": 41
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки.",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки.",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки.",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/limits": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Лимиты по КТ",
+        "description": "Метод позволяет получить отдельно бесплатные и платные лимиты продавца на создание карточек товаров. <br> Формула для получения количества карточек, которые можно создать: (`freeLimits` + `paidLimits`) - Количество созданных карточек.<br> Созданными считаются все карточки, которые можно получить методами \"Список НМ\" и \"Список НМ, находящихся в корзине\".\n",
+        "tags": [
+          "Просмотр"
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "freeLimits": {
+                          "description": "Количество бесплатных лимитов",
+                          "type": "integer"
+                        },
+                        "paidLimits": {
+                          "description": "Количество оплаченных лимитов",
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean"
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string"
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "freeLimits": 1500,
+                    "paidLimits": 10
+                  },
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": null
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/object/parent/all": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Родительские категории товаров",
+        "description": "С помощью данного метода можно получить список всех родительских категорий товаров.",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Параметр выбора языка (ru, en, zh) значений поля name. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "description": "Название категории",
+                            "type": "string",
+                            "example": "Электроника"
+                          },
+                          "id": {
+                            "description": "Идентификатор родительской категории",
+                            "type": "integer",
+                            "example": 479
+                          },
+                          "isVisible": {
+                            "description": "Виден на сайте",
+                            "type": "boolean",
+                            "example": true
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг наличия ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/object/all": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Список предметов (подкатегорий)",
+        "description": "С помощью данного метода можно получить список всех доступных предметов, родительских категорий предметов, и их идентификаторов.  <span class=\"newM\">new</span>",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "Носки"
+            },
+            "description": "Поиск по наименованию предмета (Носки), поиск работает по подстроке, искать можно на любом из поддерживаемых языков."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 1000
+            },
+            "description": "Количество подкатегорий (предметов), максимум 1 000"
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            },
+            "description": "Язык полей ответа (ru, en, zh). Не используется в песочнице"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 5000
+            },
+            "description": "Номер позиции, с которой необходимо получить ответ"
+          },
+          {
+            "name": "parentID",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 1000
+            },
+            "description": "Идентификатор родительской категории предмета"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "Подкатегории (предметы)",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "subjectID": {
+                            "type": "integer",
+                            "description": "Идентификатор предмета"
+                          },
+                          "parentID": {
+                            "type": "integer",
+                            "description": "Идентификатор родительской категории"
+                          },
+                          "subjectName": {
+                            "type": "string",
+                            "description": "Название предмета"
+                          },
+                          "parentName": {
+                            "type": "string",
+                            "description": "Название родительской категории"
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "type": "boolean",
+                      "description": "Флаг наличия ошибки"
+                    },
+                    "errorText": {
+                      "type": "string",
+                      "description": "Текст ошибки"
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "subjectID": 2560,
+                      "parentID": 479,
+                      "subjectName": "3D очки",
+                      "parentName": "Электроника"
+                    },
+                    {
+                      "subjectID": 1152,
+                      "parentID": 858,
+                      "subjectName": "3D-принтеры",
+                      "parentName": "Оргтехника"
+                    }
+                  ],
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": null
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/object/charcs/{subjectId}": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Характеристики предмета (подкатегории)",
+        "description": "Получение списка характеристик предмета по его ID. <span class=\"newM\">new</span>",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "subjectId",
+            "in": "path",
+            "required": true,
+            "description": "Идентификатор предмета",
+            "schema": {
+              "type": "integer",
+              "example": 105
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Параметр выбора языка (ru, en, zh) значений полей `subjectName`, `name`. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "Данные",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "charcID": {
+                            "type": "integer",
+                            "description": "Идентификатор характеристики"
+                          },
+                          "subjectName": {
+                            "type": "string",
+                            "description": "Название предмета"
+                          },
+                          "subjectID": {
+                            "type": "integer",
+                            "description": "Идентификатор предмета"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Название характеристики"
+                          },
+                          "required": {
+                            "type": "boolean",
+                            "description": "true - характеристику необходимо обязательно указать в КТ. false - характеристику не обязательно указывать"
+                          },
+                          "unitName": {
+                            "type": "string",
+                            "description": "Единица измерения"
+                          },
+                          "maxCount": {
+                            "type": "integer",
+                            "description": "Максимальное кол-во значений, которое можно присвоить данной характеристике. Если 0, то нет ограничения.\n"
+                          },
+                          "popular": {
+                            "description": "Характеристика популярна у пользователей (true - да, false - нет)",
+                            "type": "boolean"
+                          },
+                          "charcType": {
+                            "type": "integer",
+                            "description": "Тип характеристики (1 и 0 - строка или массив строк; 4 - число или массив чисел)"
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "type": "boolean",
+                      "description": "Флаг наличия ошибки"
+                    },
+                    "errorText": {
+                      "type": "string",
+                      "description": "Текст ошибки"
+                    },
+                    "additionalErrors": {
+                      "type": "string",
+                      "description": "Дополнительные ошибки"
+                    }
+                  },
+                  "example": {
+                    "data": [
+                      {
+                        "charcID": 54337,
+                        "subjectName": "Кроссовки",
+                        "subjectID": 105,
+                        "name": "Размер",
+                        "required": false,
+                        "unitName": "см",
+                        "maxCount": 0,
+                        "popular": false,
+                        "charcType": 4
+                      }
+                    ],
+                    "error": false,
+                    "errorText": "",
+                    "additionalErrors": null
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/directory/colors": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Цвет",
+        "description": "Получение значения характеристики цвет.",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Параметр выбора языка (ru, en, zh) значений полей `subjectName`, `name`. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "description": "Наименование цвета",
+                            "type": "string",
+                            "example": "персиковый мелок"
+                          },
+                          "parentName": {
+                            "description": "Наименование родительского цвета",
+                            "type": "string",
+                            "example": "оранжевый"
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/directory/kinds": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Пол",
+        "description": "Получение значения характеристики пол.",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Параметр выбора языка (ru, en, zh) значений полей `subjectName`, `name`. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "description": "Массив значений для хар-ки Пол",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "Мужской"
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/directory/countries": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Страна Производства",
+        "description": "Получение значения характеристики Страна Производства.",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Параметр выбора языка (ru, en, zh) значений полей `subjectName`, `name`. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "description": "Значение характеристики Страны",
+                            "type": "string",
+                            "example": "Афганистан"
+                          },
+                          "fullName": {
+                            "description": "Полное название страны",
+                            "type": "string",
+                            "example": "Исламский Эмират Афганистан"
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/directory/seasons": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Сезон",
+        "description": "Получение значения характеристики Сезон.",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Параметр выбора языка (ru, en, zh) значений полей `subjectName`, `name`. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "description": "Массив значений для хар-ки Сезон",
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "example": "демисезон"
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/directory/tnved": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "ТНВЭД код",
+        "description": "С помощью данного метода можно получить список ТНВЭД кодов по ID предмета и фильтру по ТНВЭД коду. <span class=\"newM\">new</span>",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "subjectID",
+            "in": "query",
+            "required": true,
+            "description": "Идентификатор предмета",
+            "schema": {
+              "type": "integer",
+              "example": 105
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Поиск по ТНВЭД-коду. Работает только в паре с subjectID",
+            "schema": {
+              "type": "integer",
+              "example": 6106903000
+            }
+          },
+          {
+            "name": "locale",
+            "in": "query",
+            "description": "Язык (`ru`, `en`, `zh`) для значений полей `subjectName`, `name`. Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "en"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "description": "Данные",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tnved": {
+                            "type": "string",
+                            "description": "ТНВЭД-код"
+                          },
+                          "isKiz": {
+                            "type": "boolean",
+                            "description": "- `true` - код маркировки требуется\n- `false` - код маркировки не требуется\n"
+                          }
+                        }
+                      }
+                    },
+                    "error": {
+                      "type": "boolean",
+                      "description": "Флаг наличия ошибки",
+                      "example": false
+                    },
+                    "errorText": {
+                      "type": "string",
+                      "description": "Текст ошибки"
+                    },
+                    "additionalErrors": {
+                      "type": "string",
+                      "description": "Дополнительные ошибки"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "tnved": "6106903000",
+                      "isKiz": true
+                    }
+                  ],
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/directory/vat": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Ставка НДС",
+        "description": "С помощью данного метода можно получить список значений для характеристики **Ставка НДС**. <span class=\"newM\">new</span>",
+        "tags": [
+          "Конфигуратор"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "required": true,
+            "description": "Язык значения элементов `data` (`ru`, `en`, `zh`). Не используется в песочнице",
+            "schema": {
+              "type": "string",
+              "example": "ru"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "error": {
+                      "type": "boolean",
+                      "description": "Флаг наличия ошибки"
+                    },
+                    "errorText": {
+                      "type": "string",
+                      "description": "Текст ошибки"
+                    },
+                    "additionalErrors": {
+                      "type": "string",
+                      "description": "Дополнительные ошибки"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    "0",
+                    "10",
+                    "20",
+                    "Без НДС",
+                    "13"
+                  ],
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v3/media/save": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Изменить медиафайлы",
+        "description": "Изменяет набор медиафайлов для товара (номенклатуры).\n\n**Внимание**. Новые медиафайлы (`data`) полностью заменяют старые (`mediaFiles`). Чтобы добавить новые медиафайлы, укажите ссылки не только на них, но и на старые файлы. \n\n\nТребования к изображениям:\n\n\n  * максимум изображений для одного товара (номенклатуры) — 30;\n  * минимальное разрешение – 700 × 900 пикселей;\n  * максимальный размер — 32 Мб;\n  * минимальное качество — 65%;\n  * форматы — JPG, PNG, BMP, GIF (статичные), WebP.\n\n\nТребования к видео:\n\n\n  * максимум 1 видео для одного товара (номенклатуры).\n  * максимальный размер — 50 Мб;\n  * форматы — MOV, MP4.\n\n\nЕсли хотя бы одно изображение в запросе не соответствует требованиям, то даже при успешном ответе (200) ни одно изображение не загрузится\n",
+        "tags": [
+          "Медиафайлы"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nmId": {
+                    "description": "Артикул Wildberries",
+                    "type": "integer",
+                    "example": 213864079
+                  },
+                  "data": {
+                    "description": "Ссылки на изображения в том порядке, в котором они будут на карточке товара",
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "example": "https://basket-stage-02.wb.ru/vol669/part66964/66964260/images/big/2.jpg"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean"
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string"
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {},
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Пользователь не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещён",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ошибка сохранения для части ссылок",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Отсутствие в запросе параметра nmId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Слишком много запросов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "RateLimit": {
+                    "$ref": "#/components/examples/RateLimit"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка сервиса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v3/media/file": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Добавить медиафайлы",
+        "description": "Добавляет один медиафайл для товара (номенклатуры).\n\nТребования к изображениям:\n\n  * максимум изображений для одного товара (номенклатуры) — 30;\n  * минимальное разрешение – 700 × 900 пикселей;\n  * максимальный размер — 32 Мб;\n  * минимальное качество — 65%;\n  * форматы — JPG, PNG, BMP, GIF (статичные), WebP.\n\nТребования к видео:\n\n  * максимум 1 видео для одного товара (номенклатуры);\n  * максимальный размер — 50 Мб;\n  * форматы — MOV, MP4.\n",
+        "tags": [
+          "Медиафайлы"
+        ],
+        "parameters": [
+          {
+            "name": "X-Nm-Id",
+            "in": "header",
+            "description": "Артикул Wildberries",
+            "schema": {
+              "type": "string",
+              "example": "213864079"
+            },
+            "required": true
+          },
+          {
+            "name": "X-Photo-Number",
+            "in": "header",
+            "description": "Номер медиафайла на загрузку, начинается с `1`. При загрузке видео всегда указывайте `1`.\n\nЧтобы добавить изображение к уже загруженным, номер медиафайла должен быть больше количества уже загруженных медиафайлов.\n",
+            "schema": {
+              "type": "integer",
+              "example": 2
+            },
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "uploadfile": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object"
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean"
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string"
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {},
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": null
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Некорректный запрос",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Пользователь не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещён",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Слишком много запросов",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "RateLimit": {
+                    "$ref": "#/components/examples/RateLimit"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Внутренняя ошибка сервиса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/mediaErrors"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/tags": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "get": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Список тегов",
+        "description": "Метод позволяет получить список существующих тегов продавца.",
+        "tags": [
+          "Теги"
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "properties": {
+                        "id": {
+                          "description": "Числовой идентификатор тега",
+                          "type": "integer"
+                        },
+                        "color": {
+                          "description": "Цвет тега",
+                          "type": "string"
+                        },
+                        "name": {
+                          "description": "Имя тега",
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string",
+                      "example": ""
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "string",
+                      "example": ""
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 1,
+                      "color": "D1CFD7",
+                      "name": "Sale"
+                    }
+                  ],
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": ""
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/tag": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Создание тега",
+        "description": "Метод позволяет создать тег.<br> Завести можно 15 тегов.<br> Максимальная длина тега 15 символов.\n",
+        "tags": [
+          "Теги"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "color": {
+                    "description": "Цвет тега. <dl> <dt>Доступные цвета:</dt> <dd><code>D1CFD7</code> - серый</dd> <dd><code>FEE0E0</code> - красный</dd> <dd><code>ECDAFF</code> - фиолетовый</dd> <dd><code>E4EAFF</code> - синий</dd> <dd><code>DEF1DD</code> - зеленый</dd> <dd><code>FFECC7</code> - желтый</dd> </dl>\n",
+                    "type": "string",
+                    "example": "D1CFD7"
+                  },
+                  "name": {
+                    "description": "Имя тега",
+                    "type": "string",
+                    "example": "Sale"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseContentError6"
+                },
+                "examples": {
+                  "responseOK200": {
+                    "$ref": "#/components/examples/responseOK200"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/responseBodyContentError400"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseContentError4"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseContentError6"
+                    }
+                  ]
+                },
+                "examples": {
+                  "responseBodyContentError400": {
+                    "$ref": "#/components/examples/responseBodyContentError400"
+                  },
+                  "responseBody400LenName": {
+                    "$ref": "#/components/examples/responseBody400LenName"
+                  },
+                  "responseBodyLimitTag": {
+                    "$ref": "#/components/examples/responseBodyLimitTag"
+                  },
+                  "responseBodyNameNotExist": {
+                    "$ref": "#/components/examples/responseBodyNameNotExist"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/tag/{id}": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "patch": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Изменение тега",
+        "description": "Метод позволяет изменять информацию о теге (имя и цвет).",
+        "tags": [
+          "Теги"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "description": "Числовой идентификатор тега",
+            "required": true
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "color": {
+                    "description": "Цвет тега",
+                    "type": "string",
+                    "example": "D1CFD7"
+                  },
+                  "name": {
+                    "description": "Имя тега",
+                    "type": "string",
+                    "example": "Sale"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/responseContentError6"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseContentError4"
+                    }
+                  ]
+                },
+                "examples": {
+                  "responseOK200": {
+                    "$ref": "#/components/examples/responseOK200"
+                  },
+                  "responseNotFound200": {
+                    "$ref": "#/components/examples/responseNotFound200"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/responseBodyContentError400"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseContentError4"
+                    }
+                  ]
+                },
+                "examples": {
+                  "responseBodyContentError400": {
+                    "$ref": "#/components/examples/responseBodyContentError400"
+                  },
+                  "responseBody400LenName": {
+                    "$ref": "#/components/examples/responseBody400LenName"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Удаление тега",
+        "description": "Метод позволяет удалить тег   ",
+        "tags": [
+          "Теги"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "description": "Числовой идентификатор тега",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/responseContentError6"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseContentError5"
+                    }
+                  ]
+                },
+                "examples": {
+                  "responseOK200": {
+                    "$ref": "#/components/examples/responseOK200"
+                  },
+                  "responseNotFound200Del": {
+                    "$ref": "#/components/examples/responseNotFound200Del"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/responseBodyContentError400"
+                    },
+                    {
+                      "$ref": "#/components/schemas/responseContentError5"
+                    }
+                  ]
+                },
+                "examples": {
+                  "responseBodyContentError400": {
+                    "$ref": "#/components/examples/responseBodyContentError400"
+                  },
+                  "responseBodyTagNotExist": {
+                    "$ref": "#/components/examples/responseBodyTagNotExist"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/tag/nomenclature/link": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Управление тегами в КТ",
+        "description": "Метод позволяет добавить теги к КТ и снять их с КТ.<br> При снятии тега с КТ сам тег не удаляется.<br> К карточке можно добавить 15 тегов.\n",
+        "tags": [
+          "Теги"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nmID": {
+                    "description": "Артикул WB",
+                    "type": "integer"
+                  },
+                  "tagsIDs": {
+                    "description": "Массив числовых идентификаторов тегов.<br>   Что бы снять теги с КТ, необходимо передать пустой массив.<br> Чтобы добавить теги к уже имеющимся в КТ, необходимо в запросе передать новые теги и теги, которые уже есть в КТ.\n",
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "description": "Числовой идентификатор тега."
+                    }
+                  }
+                }
+              },
+              "example": {
+                "nmID": 179891389,
+                "tagsIDs": [
+                  123456
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseContentError6"
+                },
+                "examples": {
+                  "responseOK200": {
+                    "$ref": "#/components/examples/responseOK200"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseContentError4"
+                },
+                "examples": {
+                  "IncorrectRequest4": {
+                    "$ref": "#/components/examples/IncorrectRequest4"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseContentError6"
+                },
+                "examples": {
+                  "responseBodyError500": {
+                    "$ref": "#/components/examples/responseBodyError500"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/delete/trash": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Перенос НМ в корзину",
+        "description": "Метод позволяет перенести НМ в корзину. Перенос карточки в корзину не является удалением карточки. <span class=\"newM\">new</span><br> <code>ВАЖНО</code>: При переносе НМ в корзину, данная НМ выходит из КТ, то есть ей присваивается новый <code>imtID</code>.<br> Карточка товара удаляется автоматически, если лежит в корзине больше 30 дней.<br> Корзина зачищается от карточек, лежащих в ней более 30 дней, каждую ночь по Московскому времени.\n",
+        "tags": [
+          "Корзина"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "nmIDs": {
+                      "description": "Артикул WB (max. 1000)",
+                      "type": "array",
+                      "items": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "nmIDs": [
+                  987654321,
+                  123456789
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean"
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string"
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "data": null,
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/cards/recover": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Восстановление НМ из корзины",
+        "description": "Метод позволяет восстановить НМ из корзины. <span class=\"newM\">new</span><br> <code>ВАЖНО</code>: При восстановлении НМ из корзины она не возвращается в КТ в которой была до переноса в корзину, то есть <code>imtID</code> остается тот же, что и был у НМ в корзине.\n",
+        "tags": [
+          "Корзина"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "nmIDs": {
+                      "description": "Артикул WB (max. 1000)",
+                      "type": "integer"
+                    }
+                  }
+                }
+              },
+              "example": {
+                "nmIDs": [
+                  123456789,
+                  987654321
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "nullable": true
+                    },
+                    "error": {
+                      "description": "Флаг ошибки",
+                      "type": "boolean"
+                    },
+                    "errorText": {
+                      "description": "Описание ошибки",
+                      "type": "string"
+                    },
+                    "additionalErrors": {
+                      "description": "Дополнительные ошибки",
+                      "type": "object"
+                    }
+                  }
+                },
+                "example": {
+                  "data": null,
+                  "error": false,
+                  "errorText": "",
+                  "additionalErrors": {}
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/content/v2/get/cards/trash": {
+      "servers": [
+        {
+          "url": "https://suppliers-api.wildberries.ru"
+        }
+      ],
+      "post": {
+        "security": [
+          {
+            "HeaderApiKey": []
+          }
+        ],
+        "summary": "Список НМ, находящихся в корзине",
+        "description": "Метод позволяет получить список НМ, находящихся в корзине.  <br> <br>Порядок работы. <br> Чтобы получить полный список номенклатур, <b>если их больше 100</b>, необходимо воспользоваться пагинацией.\n  <ol>\n    <li>Сделать первый запрос (все указанные ниже параметры обязательны): <br>\n      <pre style=\"background-color: rgb(38 50 56 / 5%); color: #e53935\">\n        {\n          \"settings\": {                      \n            \"cursor\": {\n              \"limit\": 100\n            }\n          }\n        }</pre>                               \n    </li>\n    <li>Пройти в конец полученного списка номенклатур, скопировать из <code>cursor</code> две строки:\n      <ul>\n        <li><code>\"trashedAt\": \"***\"</code>,</li>\n        <li><code>\"nmID\": ***</code>,</li>\n      </ul>\n    <li>Вставить скопированные строки в <code>cursor</code> запроса, повторить вызов метода. </li>\n    <li>Повторять пункты <b>2</b> и <b>3</b>, пока <code>total</code> в ответе не станет меньше чем <code>limit</code> в запросе.\n      <br>Это будет означать, что Вы получили все карточки.\n  </ol>\n  <br> По желанию можно добавить поиск и сортировку. См описание в <b>Request Body schema</b>\n  <br> В <b>Request samples</b> представлен пример запроса со всеми возможными параметрами.\n",
+        "tags": [
+          "Корзина"
+        ],
+        "parameters": [
+          {
+            "name": "locale",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ru",
+                "en",
+                "zh"
+              ]
+            },
+            "description": "Язык полей ответа `name`, `value` и `object`: `ru`, `en`, `zh`.\n\nНе используется в песочнице\n"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "settings": {
+                    "type": "object",
+                    "description": "Настройки",
+                    "properties": {
+                      "sort": {
+                        "description": "Параметр сортировки",
+                        "type": "object",
+                        "properties": {
+                          "ascending": {
+                            "type": "boolean",
+                            "description": "Сортировать по `trashedAt` (`false` - по убыванию, `true` - по возрастанию)"
+                          }
+                        }
+                      },
+                      "cursor": {
+                        "description": "Курсор",
+                        "type": "object",
+                        "properties": {
+                          "limit": {
+                            "type": "integer",
+                            "description": "Сколько КТ выдать в ответе"
+                          }
+                        }
+                      },
+                      "filter": {
+                        "description": "Параметры фильтрации",
+                        "type": "object",
+                        "properties": {
+                          "textSearch": {
+                            "type": "string",
+                            "description": "Поиск по артикулу продавца, артикулу WB, баркоду."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "settings": {
+                  "sort": {
+                    "ascending": false
+                  },
+                  "filter": {
+                    "textSearch": ""
+                  },
+                  "cursor": {
+                    "limit": 11
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Успешно",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "cards": {
+                      "description": "Массив карточек товаров",
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "nmID": {
+                            "type": "integer",
+                            "description": "Артикул WB"
+                          },
+                          "vendorCode": {
+                            "type": "string",
+                            "description": "Артикул продавца"
+                          },
+                          "subjectID": {
+                            "description": "Идентификатор предмета",
+                            "type": "string"
+                          },
+                          "subjectName": {
+                            "description": "Название предмета",
+                            "type": "string"
+                          },
+                          "photos": {
+                            "type": "array",
+                            "description": "Массив фото",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "big": {
+                                  "description": "URL фото `900х1200`",
+                                  "type": "string"
+                                },
+                                "c246x328": {
+                                  "description": "URL фото `248х328`",
+                                  "type": "string"
+                                },
+                                "c516x688": {
+                                  "description": "URL фото `516х688`",
+                                  "type": "string"
+                                },
+                                "square": {
+                                  "description": "URL фото `600х600`",
+                                  "type": "string"
+                                },
+                                "tm": {
+                                  "description": "URL фото `75х100`",
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          },
+                          "video": {
+                            "type": "string",
+                            "description": "URL видео"
+                          },
+                          "sizes": {
+                            "type": "array",
+                            "description": "Массив размеров",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "chrtID": {
+                                  "type": "integer",
+                                  "description": "ID размера"
+                                },
+                                "techSize": {
+                                  "type": "string",
+                                  "description": "Размер товара"
+                                },
+                                "wbSize": {
+                                  "type": "string",
+                                  "description": "Российский размер товара"
+                                },
+                                "skus": {
+                                  "type": "array",
+                                  "description": "Массив баркодов",
+                                  "items": {
+                                    "type": "string",
+                                    "example": "12345Ejf5"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "dimensions": {
+                            "type": "object",
+                            "properties": {
+                              "length": {
+                                "type": "integer"
+                              },
+                              "width": {
+                                "type": "integer"
+                              },
+                              "height": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "characteristics": {
+                            "description": "Массив характеристик, при наличии",
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "integer"
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "value": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "trashedAt": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "cursor": {
+                      "type": "object",
+                      "properties": {
+                        "trashedAt": {
+                          "type": "string"
+                        },
+                        "nmID": {
+                          "type": "integer"
+                        },
+                        "total": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "cards": [
+                    {
+                      "nmID": 1234567,
+                      "vendorCode": "wb5xsy5ftj",
+                      "subjectID": 1436,
+                      "subjectName": "Ведра хозяйственные",
+                      "photos": [
+                        {
+                          "big": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/big/1.webp",
+                          "c246x328": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/c246x328/1.webp",
+                          "c516x688": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/c516x688/1.webp",
+                          "square": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/square/1.webp",
+                          "tm": "https://basket-10.wbbasket.ru/vol1592/part159206/159206280/images/tm/1.webp"
+                        }
+                      ],
+                      "video": "https://video.wildberries.ru/video/new/155260000/155260136.mp4",
+                      "sizes": [
+                        {
+                          "chrtID": 111111111,
+                          "techSize": "0",
+                          "skus": [
+                            "xxxxxxxxxxxx"
+                          ]
+                        }
+                      ],
+                      "dimensions": {
+                        "length": 0,
+                        "width": 0,
+                        "height": 0
+                      },
+                      "createdAt": "2023-12-05T14:55:09.323462Z",
+                      "trashedAt": "2023-12-06T10:57:42.193028Z"
+                    }
+                  ],
+                  "cursor": {
+                    "trashedAt": "2023-12-06T10:57:42.193028Z",
+                    "nmID": 194128521,
+                    "total": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Неверная форма запроса",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError400"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Не авторизован",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                },
+                "examples": {
+                  "TokenMissing": {
+                    "$ref": "#/components/examples/TokenMissing"
+                  },
+                  "TokenInvalid": {
+                    "$ref": "#/components/examples/TokenInvalid"
+                  },
+                  "TokenNotFound": {
+                    "$ref": "#/components/examples/TokenNotFound"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступ запрещен",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodyContentError403"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "responseCardCreate": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "example": null
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "string": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        }
+      },
+      "requestMoveNmsImtConn": {
+        "type": "object",
+        "required": [
+          "targetIMT",
+          "nmIDs"
+        ],
+        "properties": {
+          "targetIMT": {
+            "description": "Существующий у продавца `imtID`, под которым необходимо объединить НМ",
+            "type": "integer",
+            "example": 123
+          },
+          "nmIDs": {
+            "description": "`nmID`, которые необходимо объединить (максимум 30)\n",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              837459235,
+              828572090
+            ]
+          }
+        }
+      },
+      "requestMoveNmsImtDisconn": {
+        "type": "object",
+        "required": [
+          "nmIDs"
+        ],
+        "properties": {
+          "nmIDs": {
+            "description": "`nmID`, которые необходимо разъединить (max 30)",
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "example": [
+              837459235,
+              828572090
+            ]
+          }
+        }
+      },
+      "responseIncorrectDate": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      },
+      "responseContentError1": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true,
+            "example": null
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "responseBodyContentError400": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "object",
+            "properties": {
+              "MoveNmsToTrash": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "example": {
+          "data": null,
+          "error": true,
+          "errorText": "Текст ошибки",
+          "additionalErrors": {
+            "MoveNmsToTrash": "Bad request"
+          }
+        }
+      },
+      "responseBodyContentError403": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "string"
+          }
+        },
+        "example": {
+          "data": null,
+          "error": true,
+          "errorText": "Доступ запрещен",
+          "additionalErrors": "Доступ запрещен"
+        }
+      },
+      "responseContentError4": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "responseContentError5": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "object",
+            "properties": {
+              "tagID": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "responseContentError6": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "nullable": true
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          },
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "example": {
+          "data": null,
+          "error": false,
+          "errorText": "",
+          "additionalErrors": null
+        }
+      },
+      "mediaErrors": {
+        "type": "object",
+        "properties": {
+          "additionalErrors": {
+            "description": "Дополнительные ошибки",
+            "type": "object"
+          },
+          "data": {
+            "type": "object"
+          },
+          "error": {
+            "description": "Флаг ошибки",
+            "type": "boolean"
+          },
+          "errorText": {
+            "description": "Описание ошибки",
+            "type": "string"
+          }
+        },
+        "example": {
+          "additionalErrors": null,
+          "data": null,
+          "error": true,
+          "errorText": "Текст ошибки"
+        }
+      }
+    },
+    "examples": {
+      "RateLimit": {
+        "description": "Превышено допустимое количество запросов в единицу времени",
+        "value": "Too many requests"
+      },
+      "creatingOneCard": {
+        "description": "",
+        "value": [
+          {
+            "subjectID": 105,
+            "variants": [
+              {
+                "vendorCode": "АртикулПродавца",
+                "title": "Наименование товара",
+                "description": "Описание товара",
+                "brand": "Бренд",
+                "dimensions": {
+                  "length": 55,
+                  "width": 40,
+                  "height": 15
+                },
+                "characteristics": [
+                  {
+                    "id": 12,
+                    "value": [
+                      "Turkish flag"
+                    ]
+                  },
+                  {
+                    "id": 25471,
+                    "value": 1200
+                  },
+                  {
+                    "id": 14177449,
+                    "value": [
+                      "red"
+                    ]
+                  }
+                ],
+                "sizes": [
+                  {
+                    "techSize": "S",
+                    "wbSize": "42",
+                    "price": 5000,
+                    "skus": [
+                      "88005553535"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "creatingMergedCards": {
+        "description": "",
+        "value": [
+          {
+            "subjectID": 3091,
+            "variants": [
+              {
+                "vendorCode": "АртикулПродавца11",
+                "title": "Наименование товара 1",
+                "description": "Описание товара 1",
+                "brand": "Бренд",
+                "dimensions": {
+                  "length": 55,
+                  "width": 40,
+                  "height": 15
+                },
+                "characteristics": [
+                  {
+                    "id": 12,
+                    "value": [
+                      "Turkish flag"
+                    ]
+                  },
+                  {
+                    "id": 25471,
+                    "value": 1200
+                  },
+                  {
+                    "id": 14177449,
+                    "value": [
+                      "red"
+                    ]
+                  }
+                ],
+                "sizes": [
+                  {
+                    "skus": [
+                      "111111111133111"
+                    ]
+                  }
+                ]
+              },
+              {
+                "vendorCode": "АртикулПродавца22",
+                "title": "Наименование товара 2",
+                "description": "Описание товара 2",
+                "brand": "БрендДругой",
+                "dimensions": {
+                  "length": 55,
+                  "width": 40,
+                  "height": 15
+                },
+                "characteristics": [
+                  {
+                    "id": 12,
+                    "value": [
+                      "Turkish flag"
+                    ]
+                  },
+                  {
+                    "id": 25471,
+                    "value": 1200
+                  },
+                  {
+                    "id": 14177449,
+                    "value": [
+                      "red"
+                    ]
+                  }
+                ],
+                "sizes": [
+                  {
+                    "skus": [
+                      "111111111441111"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "creatingGroupOfIndividualCards": {
+        "description": "",
+        "value": [
+          {
+            "subjectID": 3091,
+            "variants": [
+              {
+                "vendorCode": "АртикулПродавца1",
+                "title": "Наименование товара 1",
+                "description": "Описание товара 1",
+                "brand": "Бренд",
+                "dimensions": {
+                  "length": 55,
+                  "width": 40,
+                  "height": 15
+                },
+                "characteristics": [
+                  {
+                    "id": 12,
+                    "value": [
+                      "Turkish flag"
+                    ]
+                  },
+                  {
+                    "id": 25471,
+                    "value": 1200
+                  },
+                  {
+                    "id": 14177449,
+                    "value": [
+                      "red"
+                    ]
+                  }
+                ],
+                "sizes": [
+                  {
+                    "skus": [
+                      "1111111111111"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "subjectID": 105,
+            "variants": [
+              {
+                "vendorCode": "Артикул продавца 2",
+                "title": "Наименование товара 2",
+                "description": "Описание товара 2",
+                "brand": "Бренд",
+                "dimensions": {
+                  "length": 55,
+                  "width": 40,
+                  "height": 15
+                },
+                "characteristics": [
+                  {
+                    "id": 12,
+                    "value": [
+                      "Turkish flag"
+                    ]
+                  },
+                  {
+                    "id": 25471,
+                    "value": 1200
+                  },
+                  {
+                    "id": 14177449,
+                    "value": [
+                      "red"
+                    ]
+                  }
+                ],
+                "sizes": [
+                  {
+                    "techSize": "S",
+                    "wbSize": "42",
+                    "price": 5000,
+                    "skus": [
+                      "2222222222222"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "responseIncorrectBeginDate": {
+        "description": "Некорректная дата начала",
+        "value": {
+          "error": "Некорректная дата начала"
+        }
+      },
+      "responseIncorrectEndDate": {
+        "description": "Некорректная дата конца",
+        "value": {
+          "error": "Некорректная дата конца"
+        }
+      },
+      "responseExceededLimit": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "В группу можно объединить не больше 30 карточек. В результате запроса будет превышен лимит",
+          "additionalErrors": {
+            "error": "В группу можно объединить не больше 30 карточек. В результате запроса будет превышен лимит"
+          }
+        }
+      },
+      "responseCombining": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Объединение товаров с разными предметами невозможно",
+          "additionalErrors": {
+            "error": "Объединение товаров с разными предметами невозможно"
+          }
+        }
+      },
+      "responseIncorrectRequestFormat": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Неправильный формат запроса",
+          "additionalErrors": {
+            "error": "Неправильный формат запроса"
+          }
+        }
+      },
+      "responseNonExistentNmId": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Указан несуществующий nmID карточки товара",
+          "additionalErrors": {
+            "error": "Указан несуществующий nmID карточки товара"
+          }
+        }
+      },
+      "responseNonExistentImt": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Указан несуществующий imt",
+          "additionalErrors": {
+            "error": "Указан несуществующий imt"
+          }
+        }
+      },
+      "responseDuplicateRequests": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Недопустимо отправлять дублирующиеся запросы!",
+          "additionalErrors": {
+            "error": "Недопустимо отправлять дублирующиеся запросы!"
+          }
+        }
+      },
+      "responseAllCardsInSameGroup": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Все карточки находятся в одной группе",
+          "additionalErrors": {
+            "error": "Все карточки находятся в одной группе"
+          }
+        }
+      },
+      "responseCardCreate1": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "string",
+          "additionalErrors": {
+            "string": "string"
+          }
+        }
+      },
+      "InvalidRequestFormatContent": {
+        "description": "Некорректный формат запроса",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Invalid request format",
+          "additionalErrors": {}
+        }
+      },
+      "CardCreatedWithoutVendorCode": {
+        "description": "КТ нельзя создать без артикула продавца",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "A card cannot be created without a vendorCode",
+          "additionalErrors": {}
+        }
+      },
+      "CardsVendorCodeUsedInOtherCards": {
+        "description": "Артикул продавца используется в другой КТ",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "bad request; Unexpected the specified card's vendor code is used in other cards",
+          "additionalErrors": {}
+        }
+      },
+      "ThisCategoryDoesNotExist": {
+        "description": "Такого предмета не существует",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "This category does not exist",
+          "additionalErrors": {
+            "id": "342342"
+          }
+        }
+      },
+      "responseBodyContentError400": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Текст ошибки",
+          "additionalErrors": {
+            "MoveNmsToTrash": "Bad request"
+          }
+        }
+      },
+      "responseOK200": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": false,
+          "errorText": "",
+          "additionalErrors": null
+        }
+      },
+      "responseBody400LenName": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Недопустимое значение наименования тега",
+          "additionalErrors": {
+            "description": "Слишком длинное название тега. Разрешено не более 15 символов"
+          }
+        }
+      },
+      "responseBodyLimitTag": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Исчерпан лимит на создание тегов",
+          "additionalErrors": null
+        }
+      },
+      "responseBodyNameNotExist": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Тег с таким именем уже существует",
+          "additionalErrors": null
+        }
+      },
+      "responseNotFound200": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Неправильный запрос",
+          "additionalErrors": {
+            "description": "Такого тега не существует у продавца"
+          }
+        }
+      },
+      "responseNotFound200Del": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Такого тега не существует",
+          "additionalErrors": {
+            "tagID": "1234"
+          }
+        }
+      },
+      "IncorrectRequest4": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Неправильный запрос",
+          "additionalErrors": {
+            "description": "Указаны несуществующие теги"
+          }
+        }
+      },
+      "responseBodyTagNotExist": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Такого тега не существует",
+          "additionalErrors": {
+            "tagID": "1234"
+          }
+        }
+      },
+      "responseBodyError500": {
+        "description": "",
+        "value": {
+          "data": null,
+          "error": true,
+          "errorText": "Внутренняя ошибка.",
+          "additionalErrors": null
+        }
+      },
+      "TokenMissing": {
+        "description": "Токен отсутствует",
+        "value": "proxy: unauthorized"
+      },
+      "TokenInvalid": {
+        "description": "Токен недействителен",
+        "value": "proxy: invalid token"
+      },
+      "TokenNotFound": {
+        "description": "Токен удален",
+        "value": "proxy: not found"
+      },
+      "BodySizeExceedsTheGivenLimit": {
+        "description": "Превышен лимит объёма данных в запросе",
+        "value": "body size exceeds the given limit"
+      }
+    },
+    "securitySchemes": {
+      "HeaderApiKey": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header"
+      }
+    }
+  }
+}

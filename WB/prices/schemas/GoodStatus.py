@@ -1,0 +1,3 @@
+
+
+GoodStatus: int
