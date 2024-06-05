@@ -1,0 +1,3 @@
+
+
+GoodStatusBuffer: int
