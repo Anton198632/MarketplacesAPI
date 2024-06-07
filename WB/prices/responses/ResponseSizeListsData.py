@@ -5,4 +5,5 @@ from typing import List
 
 @dataclass
 class ResponseSizeListsData:
+
     listGoods: SizeGood

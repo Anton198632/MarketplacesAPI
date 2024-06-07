@@ -1,0 +1,4 @@
+from WB.content.schemas import ResponseBodyContentError400
+
+
+ContentV2CardsDeleteTrashResponse400: ResponseBodyContentError400

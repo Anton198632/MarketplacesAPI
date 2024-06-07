@@ -4,6 +4,14 @@ from dataclasses import dataclass
 
 @dataclass
 class ResponseTaskBuffer:
+    """
+    Состояние загрузки
+
+    
+    """
+
     data: SupplierTaskMetadataBuffer
+    #  Флаг ошибки
     error: bool
+    #  Текст ошибки
     errorText: str

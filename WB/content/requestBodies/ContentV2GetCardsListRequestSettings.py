@@ -1,11 +1,14 @@
 from WB.content.requestBodies import ContentV2GetCardsListRequestSettingsSort
-from WB.content.requestBodies import ContentV2GetCardsListRequestSettingsCursor
 from WB.content.requestBodies import ContentV2GetCardsListRequestSettingsFilter
+from WB.content.requestBodies import ContentV2GetCardsListRequestSettingsCursor
 from dataclasses import dataclass
 
 
 @dataclass
 class ContentV2GetCardsListRequestSettings:
-    sort: ContentV2GetCardsListRequestSettingsSort
-    filter: ContentV2GetCardsListRequestSettingsFilter
-    cursor: ContentV2GetCardsListRequestSettingsCursor
+    #  Параметр сортировки
+    Sort: ContentV2GetCardsListRequestSettingsSort
+    #  Параметры фильтрации
+    Filter: ContentV2GetCardsListRequestSettingsFilter
+    #  Курсор
+    Cursor: ContentV2GetCardsListRequestSettingsCursor

@@ -4,6 +4,9 @@ from dataclasses import dataclass
 
 @dataclass
 class TaskAlreadyExistsError:
-    data: TaskAlreadyExistsErrorData
+
+    Data: TaskAlreadyExistsErrorData
+    #  Флаг ошибки
     error: bool
+    #  Текст ошибки
     errorText: str

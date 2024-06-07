@@ -4,4 +4,5 @@ from dataclasses import dataclass
 
 @dataclass
 class SupplierTaskRequest:
+
     data: Goods

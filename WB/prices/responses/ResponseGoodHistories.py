@@ -4,4 +4,10 @@ from dataclasses import dataclass
 
 @dataclass
 class ResponseGoodHistories:
-    data: ResponseGoodHistoriesData
+    """
+    Информация о товарах в загрузке
+
+    
+    """
+
+    Data: ResponseGoodHistoriesData

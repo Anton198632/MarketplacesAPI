@@ -5,5 +5,7 @@ from typing import List
 
 @dataclass
 class ResponseGoodHistoriesData:
+    #  ID загрузки
     uploadID: int
+
     historyGoods: GoodHistory

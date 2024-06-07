@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 from types import NoneType
 from typing import Optional, Dict, Any, List, Union
@@ -22,8 +23,9 @@ class WBParser:
         self.responses_dir = f"{self.section_dir}/responses"
         os.makedirs(self.responses_dir, exist_ok=True)
 
-    def create_class(self, class_name, properties, component):
+    def create_class(self, class_name, properties, component, header=None):
         annotations = {}
+        descriptions = {}
         imports = set()
         imports.add("from dataclasses import dataclass")
 
@@ -34,6 +36,7 @@ class WBParser:
             if ref:
                 cl = ref.split("/")
                 cl_name = cl[len(cl) - 1]
+                cl_name = f"{cl_name[0:1].upper()}{cl_name[1:]}"
                 component_ = cl[len(cl) - 2]
                 import_pref = import_pref.replace("COMPONENT", component_)
 
@@ -51,11 +54,13 @@ class WBParser:
                 imports.add("from typing import Any")
 
             elif type_ == "object" and props:
+                name = f"{name[0].upper()}{name[1:]}"
                 field_annotation = self.create_class(
-                    f"{class_name}{name.capitalize()}", props, component
+                    f"{class_name}{name}", props, component
                 )
                 import_pref = import_pref.replace("COMPONENT", component)
-                imports.add(f"{import_pref}{class_name}{name.capitalize()}")
+                class_name = f"{class_name[0].upper()}{class_name[1:]}"
+                imports.add(f"{import_pref}{class_name}{name}")
 
             elif type_ == "array":
                 imports.add("from typing import List")
@@ -64,6 +69,7 @@ class WBParser:
                 if ref:
                     cl = ref.split("/")
                     cl_name = cl[len(cl) - 1]
+                    cl_name = f"{cl_name[0:1].upper()}{cl_name[1:]}"
                     component_ = cl[len(cl) - 2]
                     import_pref = import_pref.replace("COMPONENT", component_)
 
@@ -74,16 +80,20 @@ class WBParser:
 
                 if items_type == "object":
                     props = value.get("items").get("properties")
+                    name = f"{name[0].upper()}{name[1:]}"
                     field_annotation = List[
                         self.create_class(
-                            f"{class_name}{name.capitalize()}", props,
+                            f"{class_name}{name}",
+                            props,
                             component
                         )
                     ]
 
                     import_pref = import_pref.replace("COMPONENT", component)
+
+                    class_name = f"{class_name[0].upper()}{class_name[1:]}"
                     imports.add(
-                        f"{import_pref}{class_name}{name.capitalize()}")
+                        f"{import_pref}{class_name}{name}")
 
                 elif items_type == "string":
                     field_annotation = List[str]
@@ -106,18 +116,45 @@ class WBParser:
                 imports.add("from types import NoneType")
 
             annotations[name] = field_annotation
+            descriptions[name] = value.get("description") if value else None
 
         # Создание класса с помощью функции type() с аннотациями
+        class_name = f"{class_name[0:1].upper()}{class_name[1:]}"
+        if "{" in class_name:
+            cl_n_parts = re.split(r"[{}]", class_name)
+            class_name = "".join(
+                [f"{cl[0].upper()}{cl[1:]}" for cl in cl_n_parts]
+            )
         class_ = type(class_name, (), annotations)
 
-        self.write_class_to_script(class_, imports, annotations, component)
+        self.write_class_to_script(
+            class_, imports, annotations, component, descriptions, header
+        )
         return class_
 
-    def create(self, schema, value, component):
+    def create(
+        self,
+        schema: str,
+        value: dict,
+        component: str,
+        title: Optional[str] = None,
+        description: Optional[str] = None
+    ):
         type_ = value.get("type")
         import_pref = f"from WB.{self.section}.COMPONENT import "
 
         content = value.get("content")
+
+        if description:
+            description = description.replace(" ", " ")
+            description = description.replace("\n", "\n    ")
+        else:
+            description = ""
+
+        header = (
+            f'    """\n    {title}\n\n'
+            f'    {description}\n    """\n' if title else None
+        )
 
         if content:
             app_json = content.get("application/json")
@@ -128,17 +165,21 @@ class WBParser:
                 if ref:
                     cl = ref.split("/")
                     cl_name = cl[len(cl) - 1]
+                    cl_name = f"{cl_name[0:1].upper()}{cl_name[1:]}"
                     component_ = cl[len(cl) - 2]
                     import_pref = import_pref.replace("COMPONENT", component_)
                     imports = set()
                     imports.add(f"{import_pref}{cl_name}")
                     self.write_const_to_scripts(
-                        schema, imports, f"{schema}: {cl_name}\n", component
+                        schema,
+                        imports,
+                        f"{schema}: {cl_name}\n",
+                        component
                     )
 
         if type_ == "object":
             properties = value.get("properties")
-            self.create_class(schema, properties, component)
+            self.create_class(schema, properties, component, header)
 
         elif type_ == "array":
             items = value.get("items")
@@ -146,27 +187,29 @@ class WBParser:
             if items.get("$ref"):
                 cl = items.get("$ref").split("/")
                 cl_name = cl[len(cl) - 1]
+                cl_name = f"{cl_name[0:1].upper()}{cl_name[1:]}"
                 component_ = cl[len(cl) - 2]
                 import_pref = import_pref.replace("COMPONENT", component_)
                 imports = set()
                 imports.add("from typing import List")
                 imports.add(f"{import_pref}{cl_name}")
-
+                header = f'"""\n{title}\n\n{description}\n"""'
                 self.write_const_to_scripts(
                     schema,
-                    imports, f"{schema}: List[{cl_name}] = []\n",
+                    imports,
+                    f"{schema}: List[{cl_name}] = []\n",
                     component
                 )
             if items_type == "object":
                 properties = value.get("items").get("properties")
-                self.create_class(schema, properties, component)
+                self.create_class(schema, properties, component, header)
             else:
                 pass
 
         elif not type_:
             properties = value.get("properties")
             if properties:
-                self.create_class(schema, properties, component)
+                self.create_class(schema, properties, component, header)
             else:
                 one_of = value.get("oneOf")
                 if one_of:
@@ -202,30 +245,48 @@ class WBParser:
             self, name: str, imports: set, data: str, component: str
     ):
         # Запись в файл-скрипт
+        name = f"{name[0].upper()}{name[1:]}"
         filename = f"{self.section_dir}/{component}/{name}.py"
-        with open(filename, 'w') as file:
+        with open(filename, 'w', encoding="utf-8") as file:
             # Запись импортов
             for imp in imports:
+                if len(imp) > 79:
+                    begin = imp[0:imp.rfind(" ")]
+                    end = imp[imp.rfind(" ") + 1]
+                    imp = f"{begin} (\n    {end},\n)"
                 file.write(f"{imp}\n")
             file.write("\n\n")
 
             file.write(data)
 
     def write_class_to_script(
-            self, class_: type, imports: set, annotations: dict, component: str
+            self,
+            class_: type,
+            imports: set,
+            annotations: dict,
+            component: str,
+            descriptions: Optional[dict] = None,
+            header: Optional[str] = None
     ):
         # Запись в файл-скрипт
         filename = f"{self.section_dir}/{component}/{class_.__name__}.py"
-        with open(filename, 'w') as file:
+        with open(filename, 'w', encoding="utf-8") as file:
 
             # Запись импортов
             for imp in imports:
+                if len(imp) > 79:
+                    begin = imp[0:imp.rfind(" ")]
+                    end = imp[imp.rfind(" ") + 1:]
+                    imp = f"{begin} (\n    {end},\n)"
                 file.write(f"{imp}\n")
             file.write("\n\n")
 
             # Запись определения класса
             file.write(f"@dataclass\n")
             file.write(f"class {class_.__name__}:\n")
+
+            if header:
+                file.write(header)
 
             for field_name, field_annotation in annotations.items():
                 if hasattr(field_annotation, "__origin__"):
@@ -254,7 +315,36 @@ class WBParser:
                     annotation_str = field_annotation.__name__
                 else:
                     annotation_str = None
-                file.write(f"    {field_name}: {annotation_str}\n")
+
+                description = (
+                    descriptions[field_name]
+                    if descriptions and descriptions.get(field_name)
+                    else ""
+                )
+
+                description = (
+                    description.strip()
+                    .replace("<br>", "")
+                    .replace(" ", " ")
+                )
+
+                description_rows = [
+                    description[i : i+72]
+                    for i in range(0, len(description), 72)
+                ]
+
+                description_rows_result = []
+                for description_row in description_rows:
+                    d_rows = description_row.split("\n")
+                    description_rows_result += [
+                        f"    #  {d}" for d in d_rows
+                    ]
+                description = "\n".join(description_rows_result)
+
+                file.write(f"{description}\n")
+                file.write(
+                    f"    {field_name}: {annotation_str}\n"
+                )
 
     # def replace_classes_in_files(self, replaces_classes):
     #     folder_path = Path(self.schemas_dir)
@@ -286,19 +376,48 @@ class WBParser:
                 title = content.get("summary")
                 description = content.get("description")
                 request_body = content.get("requestBody")
+                responses = content.get("responses")
 
                 if request_body:
                     class_name = "".join(
-                        [k.capitalize() for k in key.split("/")]
+                        [
+                            f"{k[0].upper()}{k[1:]}" if k != "" else ""
+                            for k in key.strip().split("/")
+                        ]
                     )
-                    class_name = f"{class_name}Request"
-                    class_ = self.create(
-                        class_name, request_body, "requestBodies"
+                    class_name_request = f"{class_name}Request"
+                    class_request = self.create(
+                        class_name_request,
+                        request_body,
+                        "requestBodies",
+                        title,
+                        description,
                     )
                 else:
-                    class_ = None
+                    class_request = None
 
-                print(method, key, class_)
+                if responses:
+                    for status, response in responses.items():
+                        class_name = "".join(
+                            [
+                                f"{k[0].upper()}{k[1:]}" if k != "" else ""
+                                for k in key.strip().split("/")
+                            ]
+                        )
+                        class_name_response = f"{class_name}Response{status}"
+                        class_request = self.create(
+                            class_name_response,
+                            response,
+                            "responses",
+                            title,
+                            description,
+                        )
+
+                        pass
+
+
+
+                print(method, key, class_request)
 
                 pass
 
@@ -335,12 +454,15 @@ class WBParser:
         request_bodies = self.components.get("requestBodies")
         if request_bodies:
             for request_body, value in request_bodies.items():
-                self.create(request_body, value, "requestBodies")
+                self.create(
+                    request_body, value, "requestBodies",
+                )
 
         # ответы
         responses = self.components.get("responses")
         if responses:
             for response, value in responses.items():
-                self.create(response, value, "responses")
+                title = value.get("description").replace(" ", "")
+                self.create(response, value, "responses", title)
 
         self.parse_paths()
