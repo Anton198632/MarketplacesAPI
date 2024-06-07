@@ -6,7 +6,6 @@ from dataclasses import dataclass
 class ContentV2DirectoryCountriesResponse200:
     """
     Страна Производства
-
     Получение значения характеристики Страна Производства.
     """
 

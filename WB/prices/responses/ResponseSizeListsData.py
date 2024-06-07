@@ -1,6 +1,6 @@
 from WB.prices.schemas import SizeGood
-from dataclasses import dataclass
 from typing import List
+from dataclasses import dataclass
 
 
 @dataclass

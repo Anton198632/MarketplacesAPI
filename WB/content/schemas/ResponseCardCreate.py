@@ -1,7 +1,7 @@
 from typing import Optional
-from types import NoneType
-from typing import Any
 from typing import Dict
+from typing import Any
+from types import NoneType
 from dataclasses import dataclass
 
 

@@ -1,7 +1,7 @@
 from typing import Optional
-from typing import Any
-from WB.content.schemas import ResponseBodyContentError400AdditionalErrors
 from typing import Dict
+from WB.content.schemas import ResponseBodyContentError400AdditionalErrors
+from typing import Any
 from dataclasses import dataclass
 
 
@@ -14,4 +14,4 @@ class ResponseBodyContentError400:
     #  Описание ошибки
     errorText: str
     #  Дополнительные ошибки
-    AdditionalErrors: ResponseBodyContentError400AdditionalErrors
+    additionalErrors: ResponseBodyContentError400AdditionalErrors

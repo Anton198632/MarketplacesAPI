@@ -1,18 +1,18 @@
 from WB.content.requestBodies import (
+    ContentV2GetCardsTrashRequestSettingsCursor,
+)
+from WB.content.requestBodies import (
     ContentV2GetCardsTrashRequestSettingsFilter,
 )
 from WB.content.requestBodies import ContentV2GetCardsTrashRequestSettingsSort
 from dataclasses import dataclass
-from WB.content.requestBodies import (
-    ContentV2GetCardsTrashRequestSettingsCursor,
-)
 
 
 @dataclass
 class ContentV2GetCardsTrashRequestSettings:
     #  Параметр сортировки
-    Sort: ContentV2GetCardsTrashRequestSettingsSort
+    sort: ContentV2GetCardsTrashRequestSettingsSort
     #  Курсор
-    Cursor: ContentV2GetCardsTrashRequestSettingsCursor
+    cursor: ContentV2GetCardsTrashRequestSettingsCursor
     #  Параметры фильтрации
-    Filter: ContentV2GetCardsTrashRequestSettingsFilter
+    filter: ContentV2GetCardsTrashRequestSettingsFilter

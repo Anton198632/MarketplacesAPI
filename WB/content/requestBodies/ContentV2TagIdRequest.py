@@ -5,7 +5,6 @@ from dataclasses import dataclass
 class ContentV2TagIdRequest:
     """
     Изменение тега
-
     Метод позволяет изменять информацию о теге (имя и цвет).
     """
     #  Цвет тега

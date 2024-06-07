@@ -1,6 +1,6 @@
-from typing import Any
-from typing import Dict
 from typing import Optional
+from typing import Dict
+from typing import Any
 from dataclasses import dataclass
 
 
@@ -8,8 +8,6 @@ from dataclasses import dataclass
 class ErrorWrongParameters:
     """
     Неправильный запрос
-
-    
     """
 
     data: Optional[Dict]

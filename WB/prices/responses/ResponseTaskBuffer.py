@@ -6,8 +6,6 @@ from dataclasses import dataclass
 class ResponseTaskBuffer:
     """
     Состояние загрузки
-
-    
     """
 
     data: SupplierTaskMetadataBuffer

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 class ContentV2DirectoryColorsResponse200:
     """
     Цвет
-
     Получение значения характеристики цвет.
     """
 

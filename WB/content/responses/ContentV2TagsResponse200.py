@@ -6,7 +6,6 @@ from dataclasses import dataclass
 class ContentV2TagsResponse200:
     """
     Список тегов
-
     Метод позволяет получить список существующих тегов продавца.
     """
 

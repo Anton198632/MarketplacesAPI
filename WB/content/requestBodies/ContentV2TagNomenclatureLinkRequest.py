@@ -1,14 +1,13 @@
-from dataclasses import dataclass
 from typing import List
+from dataclasses import dataclass
 
 
 @dataclass
 class ContentV2TagNomenclatureLinkRequest:
     """
     Управление тегами в КТ
-
-    Метод позволяет добавить теги к КТ и снять их с КТ.<br> При снятии тега с КТ сам тег не удаляется.<br> К карточке можно добавить 15 тегов.
-    
+    Метод позволяет добавить теги к КТ и снять их с КТ.<br> При снятии тега с К
+    Т сам тег не удаляется.<br> К карточке можно добавить 15 тегов.
     """
     #  Артикул WB
     nmID: int

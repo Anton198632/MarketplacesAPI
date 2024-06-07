@@ -1,12 +1,12 @@
+from WB.content.requestBodies import ContentV2CardsUploadRequestVariantsSizes
+from typing import List
 from WB.content.requestBodies import (
     ContentV2CardsUploadRequestVariantsCharacteristics,
 )
+from dataclasses import dataclass
 from WB.content.requestBodies import (
     ContentV2CardsUploadRequestVariantsDimensions,
 )
-from typing import List
-from WB.content.requestBodies import ContentV2CardsUploadRequestVariantsSizes
-from dataclasses import dataclass
 
 
 @dataclass
@@ -28,11 +28,11 @@ class ContentV2CardsUploadRequestVariants:
     #   
     #  Если не указать структуру dimensions в запросе, то она сгенерируется
     #   системой автоматически с нулевыми значениями длины, ширины, высоты
-    Dimensions: ContentV2CardsUploadRequestVariantsDimensions
+    dimensions: ContentV2CardsUploadRequestVariantsDimensions
     #  Массив с размерами.  
     #  Если для размерного товара (обувь, одежда и др.) н
     #  е указать этот массив, то системой в карточке он будет сгенерирован авто
     #  матически с `techSize` = "A" и `wbSize` = "1" и баркодом.
-    Sizes: List[ContentV2CardsUploadRequestVariantsSizes]
+    sizes: List[ContentV2CardsUploadRequestVariantsSizes]
     #  Массив характеристик товара
-    Characteristics: List[ContentV2CardsUploadRequestVariantsCharacteristics]
+    characteristics: List[ContentV2CardsUploadRequestVariantsCharacteristics]

@@ -1,7 +1,7 @@
-from WB.prices.schemas import Date
 from WB.prices.schemas import Date1
-from dataclasses import dataclass
 from WB.prices.schemas import TaskStatusBuffer
+from WB.prices.schemas import Date
+from dataclasses import dataclass
 
 
 @dataclass

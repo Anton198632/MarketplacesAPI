@@ -1,7 +1,7 @@
 from typing import Optional
-from WB.content.schemas import ResponseContentError4AdditionalErrors
-from typing import Any
 from typing import Dict
+from typing import Any
+from WB.content.schemas import ResponseContentError4AdditionalErrors
 from dataclasses import dataclass
 
 
@@ -14,4 +14,4 @@ class ResponseContentError4:
     #  Описание ошибки
     errorText: str
     #  Дополнительные ошибки
-    AdditionalErrors: ResponseContentError4AdditionalErrors
+    additionalErrors: ResponseContentError4AdditionalErrors
