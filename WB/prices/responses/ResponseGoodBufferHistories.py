@@ -6,11 +6,9 @@ from dataclasses import dataclass
 class ResponseGoodBufferHistories:
     """
     Информация о товарах в загрузке
-
-    
     """
 
-    Data: ResponseGoodBufferHistoriesData
+    data: ResponseGoodBufferHistoriesData
     #  Флаг ошибки
     error: bool
     #  Текст ошибки

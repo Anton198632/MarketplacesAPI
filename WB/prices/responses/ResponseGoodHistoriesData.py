@@ -1,6 +1,6 @@
+from typing import List
 from WB.prices.schemas import GoodHistory
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass

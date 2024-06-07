@@ -1,16 +1,14 @@
-from dataclasses import dataclass
 from WB.prices.responses import ResponseSizeListsData
+from dataclasses import dataclass
 
 
 @dataclass
 class ResponseSizeLists:
     """
     Размеры
-
-    
     """
 
-    Data: ResponseSizeListsData
+    data: ResponseSizeListsData
     #  Флаг ошибки
     error: bool
     #  Текст ошибки

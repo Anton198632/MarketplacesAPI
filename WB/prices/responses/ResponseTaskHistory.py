@@ -6,8 +6,6 @@ from dataclasses import dataclass
 class ResponseTaskHistory:
     """
     Состояние загрузки
-
-    
     """
 
     data: SupplierTaskMetadata

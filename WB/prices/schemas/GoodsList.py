@@ -1,6 +1,6 @@
 from WB.prices.schemas import GoodsListSizes
-from dataclasses import dataclass
 from typing import List
+from dataclasses import dataclass
 
 
 @dataclass
@@ -10,7 +10,7 @@ class GoodsList:
     #  Артикул продавца
     vendorCode: str
     #  Размер
-    Sizes: List[GoodsListSizes]
+    sizes: List[GoodsListSizes]
     #  Валюта, по стандарту ISO 4217
     currencyIsoCode4217: str
     #  Скидка, %

@@ -7,6 +7,9 @@ from typing import Optional, Dict, Any, List, Union
 
 import requests
 
+from WB.constants import POST, GET, PUT, DELETE, PATCH
+from WB.data_formaters import build_class_header, build_request_class
+
 current_dir = Path(__file__).parent
 
 
@@ -83,9 +86,9 @@ class WBParser:
                     name = f"{name[0].upper()}{name[1:]}"
                     field_annotation = List[
                         self.create_class(
-                            f"{class_name}{name}",
-                            props,
-                            component
+                            class_name=f"{class_name}{name}",
+                            properties=props,
+                            component=component,
                         )
                     ]
 
@@ -115,8 +118,10 @@ class WBParser:
                 field_annotation = NoneType
                 imports.add("from types import NoneType")
 
-            annotations[name] = field_annotation
-            descriptions[name] = value.get("description") if value else None
+            annotations[f"{name[0].lower()}{name[1:]}"] = field_annotation
+            descriptions[f"{name[0].lower()}{name[1:]}"] = (
+                value.get("description") if value else None
+            )
 
         # Создание класса с помощью функции type() с аннотациями
         class_name = f"{class_name[0:1].upper()}{class_name[1:]}"
@@ -145,16 +150,7 @@ class WBParser:
 
         content = value.get("content")
 
-        if description:
-            description = description.replace(" ", " ")
-            description = description.replace("\n", "\n    ")
-        else:
-            description = ""
-
-        header = (
-            f'    """\n    {title}\n\n'
-            f'    {description}\n    """\n' if title else None
-        )
+        header = build_class_header(title, description)
 
         if content:
             app_json = content.get("application/json")
@@ -193,7 +189,7 @@ class WBParser:
                 imports = set()
                 imports.add("from typing import List")
                 imports.add(f"{import_pref}{cl_name}")
-                header = f'"""\n{title}\n\n{description}\n"""'
+                header = f'"""\n{title}\n{description}\n"""'
                 self.write_const_to_scripts(
                     schema,
                     imports,
@@ -366,7 +362,7 @@ class WBParser:
     def parse_paths(self):
         for key, value in self.paths.items():
             methods = [
-                key for key in ["post", "get", "put", "delete", "patch"]
+                key for key in [POST, GET, PUT, DELETE, PATCH]
                 if key in value
             ]
 
@@ -386,7 +382,7 @@ class WBParser:
                         ]
                     )
                     class_name_request = f"{class_name}Request"
-                    class_request = self.create(
+                    body_request_class = self.create(
                         class_name_request,
                         request_body,
                         "requestBodies",
@@ -394,8 +390,9 @@ class WBParser:
                         description,
                     )
                 else:
-                    class_request = None
+                    body_request_class = None
 
+                responses_classes = {}
                 if responses:
                     for status, response in responses.items():
                         class_name = "".join(
@@ -413,11 +410,18 @@ class WBParser:
                             description,
                         )
 
-                        pass
+                        responses_classes[status] = class_name_response
 
+                build_request_class(
+                    section=self.section,
+                    method=method,
+                    url=key,
+                    parameters=[],  # !!!!!!!!!!!
+                    responses_classes=responses_classes,
+                    body_request_class=body_request_class.get("class")
+                )
 
-
-                print(method, key, class_request)
+                print(method, key, body_request_class, responses_classes)
 
                 pass
 

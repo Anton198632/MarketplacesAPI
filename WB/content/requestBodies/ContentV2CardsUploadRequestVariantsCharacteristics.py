@@ -1,5 +1,5 @@
-from types import NoneType
 from dataclasses import dataclass
+from types import NoneType
 
 
 @dataclass

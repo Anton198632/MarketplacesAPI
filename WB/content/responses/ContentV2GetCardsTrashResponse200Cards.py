@@ -1,13 +1,13 @@
-from WB.content.responses import (
-    ContentV2GetCardsTrashResponse200CardsCharacteristics,
-)
+from dataclasses import dataclass
+from typing import List
 from WB.content.responses import (
     ContentV2GetCardsTrashResponse200CardsDimensions,
 )
-from WB.content.responses import ContentV2GetCardsTrashResponse200CardsPhotos
+from WB.content.responses import (
+    ContentV2GetCardsTrashResponse200CardsCharacteristics,
+)
 from WB.content.responses import ContentV2GetCardsTrashResponse200CardsSizes
-from typing import List
-from dataclasses import dataclass
+from WB.content.responses import ContentV2GetCardsTrashResponse200CardsPhotos
 
 
 @dataclass
@@ -21,15 +21,15 @@ class ContentV2GetCardsTrashResponse200Cards:
     #  Название предмета
     subjectName: str
     #  Массив фото
-    Photos: List[ContentV2GetCardsTrashResponse200CardsPhotos]
+    photos: List[ContentV2GetCardsTrashResponse200CardsPhotos]
     #  URL видео
     video: str
     #  Массив размеров
-    Sizes: List[ContentV2GetCardsTrashResponse200CardsSizes]
+    sizes: List[ContentV2GetCardsTrashResponse200CardsSizes]
 
-    Dimensions: ContentV2GetCardsTrashResponse200CardsDimensions
+    dimensions: ContentV2GetCardsTrashResponse200CardsDimensions
     #  Массив характеристик, при наличии
-    Characteristics: List[ContentV2GetCardsTrashResponse200CardsCharacteristics]
+    characteristics: List[ContentV2GetCardsTrashResponse200CardsCharacteristics]
 
     createdAt: str
 

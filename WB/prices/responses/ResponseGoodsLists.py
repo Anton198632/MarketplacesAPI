@@ -6,8 +6,6 @@ from dataclasses import dataclass
 class ResponseGoodsLists:
     """
     Товары
-
-    
     """
 
-    Data: ResponseGoodsListsData
+    data: ResponseGoodsListsData

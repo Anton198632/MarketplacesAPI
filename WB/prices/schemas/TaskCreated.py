@@ -5,7 +5,7 @@ from dataclasses import dataclass
 @dataclass
 class TaskCreated:
 
-    Data: TaskCreatedData
+    data: TaskCreatedData
     #  Флаг ошибки
     error: bool
     #  Текст ошибки
