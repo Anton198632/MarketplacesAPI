@@ -9,6 +9,11 @@ import requests
 
 from WB.constants import POST, GET, PUT, DELETE, PATCH
 from WB.data_formaters import build_class_header, build_request_class
+from WB.file_helper import (
+    build_path,
+    write_class_to_script,
+    write_const_to_scripts,
+)
 
 current_dir = Path(__file__).parent
 
@@ -19,12 +24,10 @@ class WBParser:
         self.section = section
 
         self.section_dir = f"{current_dir}/{section}"
-        self.schemas_dir = f"{self.section_dir}/schemas"
-        os.makedirs(self.schemas_dir, exist_ok=True)
-        self.request_bodies_dir = f"{self.section_dir}/requestBodies"
-        os.makedirs(self.request_bodies_dir, exist_ok=True)
-        self.responses_dir = f"{self.section_dir}/responses"
-        os.makedirs(self.responses_dir, exist_ok=True)
+        # self.request_bodies_dir = f"{self.section_dir}/requestBodies"
+        # os.makedirs(self.request_bodies_dir, exist_ok=True)
+        # self.responses_dir = f"{self.section_dir}/responses"
+        # os.makedirs(self.responses_dir, exist_ok=True)
 
     def create_class(self, class_name, properties, component, header=None):
         annotations = {}
@@ -61,7 +64,9 @@ class WBParser:
                 field_annotation = self.create_class(
                     f"{class_name}{name}", props, component
                 )
-                import_pref = import_pref.replace("COMPONENT", component)
+                import_pref = import_pref.replace(
+                    "COMPONENT", component.replace("/", ".")
+                )
                 class_name = f"{class_name[0].upper()}{class_name[1:]}"
                 imports.add(f"{import_pref}{class_name}{name}")
 
@@ -92,7 +97,9 @@ class WBParser:
                         )
                     ]
 
-                    import_pref = import_pref.replace("COMPONENT", component)
+                    import_pref = import_pref.replace(
+                        "COMPONENT", component.replace("/", ".")
+                    )
 
                     class_name = f"{class_name[0].upper()}{class_name[1:]}"
                     imports.add(
@@ -128,12 +135,17 @@ class WBParser:
         if "{" in class_name:
             cl_n_parts = re.split(r"[{}]", class_name)
             class_name = "".join(
-                [f"{cl[0].upper()}{cl[1:]}" for cl in cl_n_parts]
+                [f"{cl[0].upper()}{cl[1:]}" if cl else "" for cl in cl_n_parts]
             )
         class_ = type(class_name, (), annotations)
 
-        self.write_class_to_script(
-            class_, imports, annotations, component, descriptions, header
+        write_class_to_script(
+            path=f"WB/{self.section}/{component}",
+            class_=class_,
+            imports=imports,
+            annotations=annotations,
+            descriptions=descriptions,
+            header=header
         )
         return class_
 
@@ -162,15 +174,18 @@ class WBParser:
                     cl = ref.split("/")
                     cl_name = cl[len(cl) - 1]
                     cl_name = f"{cl_name[0:1].upper()}{cl_name[1:]}"
-                    component_ = cl[len(cl) - 2]
+                    component_ = ref[2:ref.rfind("/")].replace("/", ".")
                     import_pref = import_pref.replace("COMPONENT", component_)
                     imports = set()
                     imports.add(f"{import_pref}{cl_name}")
-                    self.write_const_to_scripts(
-                        schema,
-                        imports,
-                        f"{schema}: {cl_name}\n",
-                        component
+                    if "{" in schema:
+                        !!!!!!!
+                        pass
+                    write_const_to_scripts(
+                        path=f"WB/{self.section}/{component}",
+                        name=schema,
+                        imports=imports,
+                        data=f"{schema}: {cl_name}\n",
                     )
 
         if type_ == "object":
@@ -190,11 +205,11 @@ class WBParser:
                 imports.add("from typing import List")
                 imports.add(f"{import_pref}{cl_name}")
                 header = f'"""\n{title}\n{description}\n"""'
-                self.write_const_to_scripts(
-                    schema,
-                    imports,
-                    f"{schema}: List[{cl_name}] = []\n",
-                    component
+                write_const_to_scripts(
+                    path=f"WB/{self.section}/{component}",
+                    name=schema,
+                    imports=imports,
+                    data=f"{schema}: List[{cl_name}] = []\n",
                 )
             if items_type == "object":
                 properties = value.get("items").get("properties")
@@ -222,142 +237,25 @@ class WBParser:
                     pass
 
         elif type_ == "string":
-            self.write_const_to_scripts(
-                schema, set(), f"{schema}: str\n", component
+            write_const_to_scripts(
+                path=f"WB/{self.section}/{component}",
+                name=schema,
+                imports=set(),
+                data=f"{schema}: str\n",
             )
-            # return {"class": schema, "type": "str"}
 
         elif type_ == "integer":
-            self.write_const_to_scripts(
-                schema, set(), f"{schema}: int\n", component
+            write_const_to_scripts(
+                path=f"WB/{self.section}/{component}",
+                name=schema,
+                imports=set(),
+                data=f"{schema}: int\n",
             )
-            # return {"class": schema, "type": "int"}
+
         else:
             pass
 
         return {"class": schema}
-
-    def write_const_to_scripts(
-            self, name: str, imports: set, data: str, component: str
-    ):
-        # Запись в файл-скрипт
-        name = f"{name[0].upper()}{name[1:]}"
-        filename = f"{self.section_dir}/{component}/{name}.py"
-        with open(filename, 'w', encoding="utf-8") as file:
-            # Запись импортов
-            for imp in imports:
-                if len(imp) > 79:
-                    begin = imp[0:imp.rfind(" ")]
-                    end = imp[imp.rfind(" ") + 1]
-                    imp = f"{begin} (\n    {end},\n)"
-                file.write(f"{imp}\n")
-            file.write("\n\n")
-
-            file.write(data)
-
-    def write_class_to_script(
-            self,
-            class_: type,
-            imports: set,
-            annotations: dict,
-            component: str,
-            descriptions: Optional[dict] = None,
-            header: Optional[str] = None
-    ):
-        # Запись в файл-скрипт
-        filename = f"{self.section_dir}/{component}/{class_.__name__}.py"
-        with open(filename, 'w', encoding="utf-8") as file:
-
-            # Запись импортов
-            for imp in imports:
-                if len(imp) > 79:
-                    begin = imp[0:imp.rfind(" ")]
-                    end = imp[imp.rfind(" ") + 1:]
-                    imp = f"{begin} (\n    {end},\n)"
-                file.write(f"{imp}\n")
-            file.write("\n\n")
-
-            # Запись определения класса
-            file.write(f"@dataclass\n")
-            file.write(f"class {class_.__name__}:\n")
-
-            if header:
-                file.write(header)
-
-            for field_name, field_annotation in annotations.items():
-                if hasattr(field_annotation, "__origin__"):
-                    if field_annotation.__origin__ is Union and type(
-                            None) in field_annotation.__args__:
-                        non_none_args = [arg for arg in
-                                         field_annotation.__args__ if
-                                         arg is not type(None)]
-                        annotation_str = (
-                            f"Optional[{non_none_args[0].__name__}]"
-                        )
-                    elif field_annotation.__origin__ is list:
-                        annotation_str = (
-                            f"{field_annotation.__name__}"
-                            f"[{field_annotation.__args__[0].__name__}]"
-                        )
-                    else:
-                        args = ", ".join(
-                            arg.__name__ for arg in field_annotation.__args__
-                        )
-                        annotation_str = (
-                            f"{field_annotation.__origin__.__name__}[{args}]"
-                        )
-
-                elif field_annotation:
-                    annotation_str = field_annotation.__name__
-                else:
-                    annotation_str = None
-
-                description = (
-                    descriptions[field_name]
-                    if descriptions and descriptions.get(field_name)
-                    else ""
-                )
-
-                description = (
-                    description.strip()
-                    .replace("<br>", "")
-                    .replace(" ", " ")
-                )
-
-                description_rows = [
-                    description[i : i+72]
-                    for i in range(0, len(description), 72)
-                ]
-
-                description_rows_result = []
-                for description_row in description_rows:
-                    d_rows = description_row.split("\n")
-                    description_rows_result += [
-                        f"    #  {d}" for d in d_rows
-                    ]
-                description = "\n".join(description_rows_result)
-
-                file.write(f"{description}\n")
-                file.write(
-                    f"    {field_name}: {annotation_str}\n"
-                )
-
-    # def replace_classes_in_files(self, replaces_classes):
-    #     folder_path = Path(self.schemas_dir)
-    #     classes_files = [f for f in folder_path.iterdir() if f.is_file()]
-    #
-    #     for classes_file in classes_files:
-    #         with open(classes_file, "r", encoding='utf-8') as f:
-    #             text = f.read()
-    #         for replace_class in replaces_classes:
-    #             new_type = replace_class.get("type")
-    #             class_name = replace_class.get("class")
-    #             if new_type:
-    #                 text = text.replace(f"import {class_name}\n", "")
-    #                 text = text.replace(f" {class_name}\n", f" {new_type}\n")
-    #
-    #         with open(classes_file, "w", encoding='utf-8') as f:
-    #             f.write(text)
 
     def parse_paths(self):
         for key, value in self.paths.items():
@@ -375,19 +273,23 @@ class WBParser:
                 responses = content.get("responses")
 
                 if request_body:
-                    class_name = "".join(
-                        [
-                            f"{k[0].upper()}{k[1:]}" if k != "" else ""
-                            for k in key.strip().split("/")
-                        ]
-                    )
+
+                    component_path = f"requestBodies{key[0:key.rfind('/')]}"
+                    build_path(f"WB/{self.section}/{component_path}")
+                    # class_name = "".join(
+                    #     [
+                    #         f"{k[0].upper()}{k[1:]}" if k != "" else ""
+                    #         for k in key.strip().split("/")
+                    #     ]
+                    # )
+                    class_name = key[key.rfind("/") + 1:]
                     class_name_request = f"{class_name}Request"
                     body_request_class = self.create(
-                        class_name_request,
-                        request_body,
-                        "requestBodies",
-                        title,
-                        description,
+                        schema=class_name_request,
+                        value=request_body,
+                        component=component_path,
+                        title=title,
+                        description=description,
                     )
                 else:
                     body_request_class = None
@@ -395,33 +297,36 @@ class WBParser:
                 responses_classes = {}
                 if responses:
                     for status, response in responses.items():
-                        class_name = "".join(
-                            [
-                                f"{k[0].upper()}{k[1:]}" if k != "" else ""
-                                for k in key.strip().split("/")
-                            ]
-                        )
+                        # class_name = "".join(
+                        #     [
+                        #         f"{k[0].upper()}{k[1:]}" if k != "" else ""
+                        #         for k in key.strip().split("/")
+                        #     ]
+                        # )
+                        component_path = f"responses{key[0:key.rfind('/')]}"
+                        build_path(f"WB/{self.section}/{component_path}")
+                        class_name = key[key.rfind("/") + 1:]
                         class_name_response = f"{class_name}Response{status}"
                         class_request = self.create(
-                            class_name_response,
-                            response,
-                            "responses",
-                            title,
-                            description,
+                            schema=class_name_response,
+                            value=response,
+                            component=component_path,
+                            title=title,
+                            description=description,
                         )
 
                         responses_classes[status] = class_name_response
 
-                build_request_class(
-                    section=self.section,
-                    method=method,
-                    url=key,
-                    parameters=[],  # !!!!!!!!!!!
-                    responses_classes=responses_classes,
-                    body_request_class=body_request_class.get("class")
-                )
-
-                print(method, key, body_request_class, responses_classes)
+                # build_request_class(
+                #     section=self.section,
+                #     method=method,
+                #     url=key,
+                #     parameters=[],  # !!!!!!!!!!!
+                #     responses_classes=responses_classes,
+                #     body_request_class=body_request_class.get("class")
+                # )
+                #
+                # print(method, key, body_request_class, responses_classes)
 
                 pass
 
@@ -451,22 +356,25 @@ class WBParser:
 
         # получаем схемы
         schemas = self.components.get("schemas")
+        build_path(f"WB/{self.section}/components/schemas")
         for schema, value in schemas.items():
-            self.create(schema, value, "schemas")
+            self.create(schema, value, "components/schemas")
 
         # тела запросов
         request_bodies = self.components.get("requestBodies")
+        build_path(f"WB/{self.section}/components/requestBodies")
         if request_bodies:
             for request_body, value in request_bodies.items():
                 self.create(
-                    request_body, value, "requestBodies",
+                    request_body, value, "components/requestBodies",
                 )
 
         # ответы
         responses = self.components.get("responses")
+        build_path(f"WB/{self.section}/components/responses")
         if responses:
             for response, value in responses.items():
                 title = value.get("description").replace(" ", "")
-                self.create(response, value, "responses", title)
+                self.create(response, value, "components/responses", title)
 
         self.parse_paths()

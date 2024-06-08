@@ -1,4 +1,0 @@
-from WB.content.schemas import ResponseBodyContentError400
-
-
-ContentV2GetCardsListResponse400: ResponseBodyContentError400

@@ -1,4 +1,0 @@
-from WB.content.schemas import ResponseContentError4
-
-
-ContentV2TagNomenclatureLinkResponse400: ResponseContentError4

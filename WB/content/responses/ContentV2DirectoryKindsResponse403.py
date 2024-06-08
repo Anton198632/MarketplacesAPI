@@ -1,4 +1,0 @@
-from WB.content.schemas import ResponseBodyContentError403
-
-
-ContentV2DirectoryKindsResponse403: ResponseBodyContentError403

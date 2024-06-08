@@ -1,4 +1,0 @@
-from WB.content.schemas import ResponseBodyContentError400
-
-
-ContentV2DirectorySeasonsResponse400: ResponseBodyContentError400

@@ -1,4 +1,0 @@
-from WB.content.schemas import ResponseBodyContentError400
-
-
-ContentV2ObjectCharcs{subjectId}Response400: ResponseBodyContentError400

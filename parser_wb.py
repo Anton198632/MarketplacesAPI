@@ -7,5 +7,4 @@ if __name__ == "__main__":
     for section in sections:
         parser = WBParser(section)
         parser.parse_wb_api()
-
-    pass
+        pass
