@@ -2,6 +2,8 @@ import json
 import os
 from typing import Dict, Optional, Union
 
+from WB.data_formaters import build_class_header
+
 
 def dict_write(filename: str, data: Dict) -> None:
     with open(filename, "w", encoding="utf-8") as f:
@@ -14,12 +16,12 @@ def build_path(path: str) -> str:
 
 
 def write_class_to_script(
-    path: str,
-    class_: type,
-    imports: set,
-    annotations: dict,
-    descriptions: Optional[dict] = None,
-    header: Optional[str] = None
+        path: str,
+        class_: type,
+        imports: set,
+        annotations: dict,
+        descriptions: Optional[dict] = None,
+        header: Optional[str] = None
 ):
     # Запись в файл-скрипт
     filename = f"{path}/{class_.__name__}.py"
@@ -77,12 +79,12 @@ def write_class_to_script(
 
             description = (
                 description.strip()
-                .replace("<br>", "")
-                .replace(" ", " ")
+                    .replace("<br>", "")
+                    .replace(" ", " ")
             )
 
             description_rows = [
-                description[i : i+72]
+                description[i: i + 72]
                 for i in range(0, len(description), 72)
             ]
 
@@ -100,9 +102,7 @@ def write_class_to_script(
             )
 
 
-def write_const_to_scripts(
-        path: str, name: str, imports: set, data: str
-):
+def write_const_to_scripts(path: str, name: str, imports: set, data: str):
     # Запись в файл-скрипт
     name = f"{name[0].upper()}{name[1:]}"
     filename = f"{path}/{name}.py"
@@ -117,3 +117,33 @@ def write_const_to_scripts(
         file.write("\n\n")
 
         file.write(data)
+
+
+def write_parameter_to_script(
+    path: str,
+    name: str,
+    in_: str,
+    description: str,
+    required: bool,
+    type_: str
+):
+    name = f"{name[0].upper()}{name[1:]}"
+    filename = f"{path}/{name}.py"
+
+    if type_ == "integer":
+        type_ = "int"
+    elif type == "string":
+        type_ = "str"
+    else:
+        pass
+
+    with open(filename, 'w', encoding="utf-8") as file:
+        if not required:
+            file.write("from typing import Optional\n\n\n")
+        file.write(f"class {name}:\n")
+        file.write(build_class_header(title=description))
+        file.write(f'    IN = "{in_}"\n')
+        if required:
+            file.write(f"    value: {type_}")
+        else:
+            file.write(f"    value: Optional[{type_}]\n")
