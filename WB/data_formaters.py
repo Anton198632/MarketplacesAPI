@@ -6,13 +6,17 @@ from jinja2 import FileSystemLoader, Environment
 
 
 def build_class_header(
-        title: str = None, description: str = None
+        title: Optional[str] = None, description: str = None
 ) -> Optional[str]:
     if description:
         description = description.replace(" ", " ")
         description = description.replace("\n", "\n    ")
     else:
         description = ""
+
+    if title:
+        title = title.replace(" ", " ")
+        title = title.replace("\n", "\n    ")
 
     header = (
         f'"""\n{title}\n{description}\n"""\n' if title else None
@@ -57,10 +61,8 @@ def build_request_class(
             f"from WB.{section}.{responses_path} import {response_class}"
         )
 
-    body_request_json_row = (
-        f"    json=asdict(body_request, {body_request_class})"
-        if body_request_class else ""
-    )
+    body_request_json_row = ("    json=asdict(body_request)")
+    headers = ('    headers={"Authorization": self.api_key"},')
 
     parameters = [f"{p}: str" for p in parameters]
     if body_request_class:
@@ -69,7 +71,7 @@ def build_request_class(
     class_data = {
         "imports": [
             "import requests",
-            "from dataclasses import asdict"
+            "from dataclasses import asdict",
             "from WB.create_logger import create_logger",
 
             f"from WB.{section}.requestBodies import {body_request_class}"
@@ -95,7 +97,8 @@ def build_request_class(
                         ],
                         "body": [
                             f"response = requests.{method}(",
-                            f'    url="{url}"',
+                            f'    url="{url}",',
+                            headers,
                             body_request_json_row,
                             f")"
                         ]

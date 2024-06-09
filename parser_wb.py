@@ -2,7 +2,7 @@ from WB.parser import WBParser
 
 
 if __name__ == "__main__":
-    sections = ["content", "prices"]
+    sections = ["prices", "content"]
 
     for section in sections:
         parser = WBParser(section)
