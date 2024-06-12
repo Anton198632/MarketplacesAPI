@@ -12,7 +12,6 @@ from WB.file_helper import (
     build_path,
     write_class_to_script,
     write_const_to_scripts,
-    write_parameter_to_script,
 )
 
 current_dir = Path(__file__).parent
@@ -29,27 +28,31 @@ def parse_ref(ref):
 class WBParser:
 
     def __init__(self, section):
+        self.parameters = []
         self.section = section
 
         self.section_dir = f"{current_dir}/{section}"
-        # self.request_bodies_dir = f"{self.section_dir}/requestBodies"
-        # os.makedirs(self.request_bodies_dir, exist_ok=True)
-        # self.responses_dir = f"{self.section_dir}/responses"
-        # os.makedirs(self.responses_dir, exist_ok=True)
 
-    def create_class(self, class_name, properties, component, header=None):
+    def create_class(
+            self, class_name, properties, component, required, header=None,
+    ):
         annotations = {}
         descriptions = {}
         imports = set()
         imports.add("from dataclasses import dataclass")
 
-        import_pref = f"from WB.{self.section}.COMPONENT import "
+        import_pref = f"from WB.{self.section}.COMPONENT.CLASS import "
+
+        # if properties and len(properties.items()) != len(required):
+        imports.add("from typing import Optional")
 
         for name, value in properties.items():
             ref = value.get("$ref")
             if ref:
                 cl_name, component_ = parse_ref(ref)
-                import_pref = import_pref.replace("COMPONENT", component_)
+                import_pref = (
+                    import_pref.replace("COMPONENT", component_)
+                )
 
                 field_annotation = type(cl_name, (), {})
                 annotations[name] = field_annotation
@@ -60,30 +63,33 @@ class WBParser:
             format_ = value.get("format")
             props = value.get("properties")
             if type_ == "object" and not props:
-                field_annotation = Optional[Dict[str, Any]]
-                imports.add("from typing import Optional")
+                field_annotation = Dict[str, Any]
+                # imports.add("from typing import Optional")
                 imports.add("from typing import Dict")
                 imports.add("from typing import Any")
 
             elif type_ == "object" and props:
-                name = f"{name[0].upper()}{name[1:]}"
+                name_ = f"{name[0].upper()}{name[1:]}"
                 field_annotation = self.create_class(
-                    f"{class_name}{name}", props, component
+                    f"{class_name}{name_}", props, component, required
                 )
+                class_name = f"{class_name[0].upper()}{class_name[1:]}"
                 import_pref = import_pref.replace(
                     "COMPONENT", component.replace("/", ".")
                 )
-                class_name = f"{class_name[0].upper()}{class_name[1:]}"
-                imports.add(f"{import_pref}{class_name}{name}")
+                imports.add(f"{import_pref}{class_name}{name_}")
 
             elif type_ == "array":
                 imports.add("from typing import List")
                 items_type = value.get("items").get("type")
                 ref = value.get("items").get("$ref")
+                required_ = value.get("items").get("required")
+                required_ = required_ if required_ else []
                 if ref:
                     cl_name, component_ = parse_ref(ref)
-                    import_pref = import_pref.replace("COMPONENT", component_)
-
+                    import_pref = (
+                        import_pref.replace("COMPONENT", component_)
+                    )
                     field_annotation = type(cl_name, (), {})
                     annotations[name] = field_annotation
                     imports.add(f"{import_pref}{cl_name}")
@@ -91,22 +97,23 @@ class WBParser:
 
                 if items_type == "object":
                     props = value.get("items").get("properties")
-                    name = f"{name[0].upper()}{name[1:]}"
+                    name_ = f"{name[0].upper()}{name[1:]}"
                     field_annotation = List[
                         self.create_class(
-                            class_name=f"{class_name}{name}",
+                            class_name=f"{class_name}{name_}",
                             properties=props,
                             component=component,
+                            required=required_
                         )
                     ]
 
+                    class_name = f"{class_name[0].upper()}{class_name[1:]}"
                     import_pref = import_pref.replace(
                         "COMPONENT", component.replace("/", ".")
                     )
 
-                    class_name = f"{class_name[0].upper()}{class_name[1:]}"
                     imports.add(
-                        f"{import_pref}{class_name}{name}")
+                        f"{import_pref}{class_name}{name_}")
 
                 elif items_type == "string":
                     field_annotation = List[str]
@@ -115,7 +122,6 @@ class WBParser:
                 elif items_type == "boolean":
                     field_annotation = List[bool]
                 else:
-                    pass
                     field_annotation = List[Any]
 
             elif type_ == "boolean":
@@ -132,6 +138,17 @@ class WBParser:
             else:
                 field_annotation = Any
                 imports.add("from typing import Any")
+
+            if "vendorCode" in name:
+                pass
+
+            if (
+                (isinstance(required, list) and name not in required)
+                or (isinstance(required, bool) and required)
+            ):
+                field_annotation = Optional[field_annotation]
+            else:
+                pass
 
             annotations[f"{name[0].lower()}{name[1:]}"] = field_annotation
             descriptions[f"{name[0].lower()}{name[1:]}"] = (
@@ -153,7 +170,7 @@ class WBParser:
             imports=imports,
             annotations=annotations,
             descriptions=descriptions,
-            header=header
+            header=header,
         )
         return class_
 
@@ -166,11 +183,13 @@ class WBParser:
         description: Optional[str] = None
     ):
         type_ = value.get("type")
-        import_pref = f"from WB.{self.section}.COMPONENT import "
+        import_pref = f"from WB.{self.section}.COMPONENT.CLASS import "
 
         content = value.get("content")
 
         header = build_class_header(title, description)
+
+        required = value.get("required") if value.get("required") else []
 
         if content:
             for key, v in content.items():
@@ -183,8 +202,11 @@ class WBParser:
                 ref = content_data.get("schema").get("$ref")
                 if ref:
                     cl_name, component_ = parse_ref(ref)
-                    import_pref = import_pref.replace("COMPONENT", component_)
+                    import_pref = (
+                        import_pref.replace("COMPONENT", component_)
+                    )
                     imports = set()
+                    imports.add("from dataclasses import dataclass")
                     imports.add(f"{import_pref}{cl_name}")
                     if "{" in schema:
                         cl_n_parts = re.split(r"[{}]", schema)
@@ -196,47 +218,56 @@ class WBParser:
                         path=f"WB/{self.section}/{component}",
                         name=schema,
                         imports=imports,
-                        data=f"{schema}: {cl_name}\n",
+                        classes=[
+                            {"class_name": schema, "base_class": cl_name},
+                        ],
                     )
 
         if type_ == "object":
             properties = value.get("properties")
-            self.create_class(schema, properties, component, header)
+            self.create_class(schema, properties, component, required, header)
 
         elif type_ == "array":
             items = value.get("items")
             items_type = value.get("items").get("type")
+            required = items.get("required") if items.get("required") else []
             ref = items.get("$ref")
             if ref:
                 cl_name, component_ = parse_ref(ref)
-                import_pref = import_pref.replace("COMPONENT", component_)
+                import_pref = (
+                    import_pref.replace("COMPONENT", component_)
+                )
                 imports = set()
+                imports.add("from dataclasses import dataclass")
                 imports.add("from typing import List")
                 imports.add(f"{import_pref}{cl_name}")
-                header = f'"""\n{title}\n{description}\n"""'
                 write_const_to_scripts(
                     path=f"WB/{self.section}/{component}",
                     name=schema,
                     imports=imports,
-                    data=f"{schema}: List[{cl_name}] = []\n",
+                    classes=[{"class_name": schema, "base_class": "list"}],
                 )
             elif items_type == "object":
                 properties = value.get("items").get("properties")
-                self.create_class(schema, properties, component, header)
+                self.create_class(
+                    schema, properties, component, required, header
+                )
             else:
                 pass
 
         elif not type_:
             properties = value.get("properties")
             if properties:
-                self.create_class(schema, properties, component, header)
+                self.create_class(
+                    schema, properties, component, required, header
+                )
             else:
                 one_of = value.get("oneOf")
                 ref = value.get("$ref")
                 if one_of:
                     imports = set()
+                    imports.add("from dataclasses import dataclass")
                     cls_names = []
-                    imports.add("from typing import Union")
                     for i in range(0, len(one_of)):
                         ref = one_of[i].get("$ref")
 
@@ -249,45 +280,72 @@ class WBParser:
                             cls_names.append(cl_name)
                         else:
                             pass
+
+                    classes = [
+                        {
+                            "class_name": f"{schema}{cl_name}",
+                            "base_class": cl_name,
+                        }
+                        for cl_name in cls_names
+                    ]
                     write_const_to_scripts(
                         path=f"WB/{self.section}/{component}",
                         name=schema,
                         imports=imports,
-                        data=f'{schema}: Union[{", ".join(cls_names)}]\n',
+                        classes=classes
                     )
+
+                    return {
+                        "classes": (
+                            ", ".join([
+                                class_.get("class_name") for class_ in classes
+                            ])
+                        ),
+                        "module": schema
+                    }
 
                 elif ref:
                     cl_name, component_ = parse_ref(ref)
-                    import_pref = import_pref.replace("COMPONENT", component_)
+                    import_pref = (
+                        import_pref.replace("COMPONENT", component_)
+                    )
+
                     imports = set()
+                    imports.add("from dataclasses import dataclass")
                     imports.add(f"{import_pref}{cl_name}")
                     write_const_to_scripts(
                         path=f"WB/{self.section}/{component}",
                         name=schema,
                         imports=imports,
-                        data=f"{schema}: {cl_name}\n",
+                        classes=[
+                            {"class_name": schema, "base_class": cl_name}
+                        ],
                     )
 
         elif type_ == "string":
+            imports = set()
+            imports.add("from dataclasses import dataclass")
             write_const_to_scripts(
                 path=f"WB/{self.section}/{component}",
                 name=schema,
-                imports=set(),
-                data=f"{schema}: str\n",
+                imports=imports,
+                classes=[{"class_name": schema, "base_class": "str"}]
             )
 
         elif type_ == "integer":
+            imports = set()
+            imports.add("from dataclasses import dataclass")
             write_const_to_scripts(
                 path=f"WB/{self.section}/{component}",
                 name=schema,
-                imports=set(),
-                data=f"{schema}: int\n",
+                imports=imports,
+                classes=[{"class_name": schema, "base_class": "int"}]
             )
 
         else:
             pass
 
-        return {"class": schema}
+        return f"{schema[0].upper()}{schema[1:]}"
 
     def parse_paths(self):
         for key, value in self.paths.items():
@@ -302,57 +360,104 @@ class WBParser:
                 title = content.get("summary")
                 description = content.get("description")
                 request_body = content.get("requestBody")
-                responses = content.get("responses")
-                parameters = content.get("parameters")
 
                 if request_body:
-                    component_path = f"requestBodies{key[0:key.rfind('/')]}"
+
+                    component_path = (
+                        f"requestBodies{key}/{method}"
+                    )
                     build_path(f"WB/{self.section}/{component_path}")
-                    class_name = key[key.rfind("/") + 1:]
-                    class_name_request = f"{class_name}Request"
-                    body_request_class = self.create(
+                    class_name_request = f"RequestBody"
+                    class_ = self.create(
                         schema=class_name_request,
                         value=request_body,
                         component=component_path,
-                        title=title,
-                        description=description,
                     )
+                    if isinstance(class_, str):
+                        body_request_class = {
+                            "class": class_,
+                            "import": (
+                            f"WB/{self.section}/{component_path}"
+                                .replace("/", ".")
+                            )
+                        }
+                    else:
+                        class_union = f'Union[{class_.get("classes")}]'
+                        body_request_class = {
+                            "class": class_union,
+                            "import": (
+                                f"WB/{self.section}/{component_path}"
+                                f'/{class_.get("module")}'
+                                .replace("/", ".")
+                            )
+
+                        }
+
+                        !!!!!!!
+                        pass
+
+
+
                 else:
                     body_request_class = None
 
+                parameters = content.get("parameters")
+                parameters_data = []
                 if parameters:
-                    !!!!!!
+                    for parameter in parameters:
+                        ref = parameter.get("$ref")
+                        if ref:
+                            name = ref.split("/")[-1]
+                            parameter_data = list(
+                                filter(
+                                    lambda p: p.get("name") == name,
+                                    self.parameters,
+                                )
+                            )[0]
+                            parameters_data.append(parameter_data)
 
+                    parameters_data.sort(key=lambda p: p.get("required"))
+                    parameters_data.reverse()
+
+                    pass
+
+                responses = content.get("responses")
                 responses_classes = {}
                 if responses:
                     for status, response in responses.items():
-                        component_path = f"responses{key[0:key.rfind('/')]}"
+                        component_path = (
+                            f"responses{key}/{method}"
+                        )
                         build_path(f"WB/{self.section}/{component_path}")
-                        class_name = key[key.rfind("/") + 1:]
-                        class_name_response = f"{class_name}Response{status}"
-                        class_request = self.create(
+                        class_name_response = f"Response{status}"
+                        class_response = self.create(
                             schema=class_name_response,
                             value=response,
                             component=component_path,
-                            title=title,
-                            description=description,
+                            # title=title,
+                            # description=description,
                         )
-
-                        responses_classes[status] = class_name_response
+                        responses_classes[status] = {
+                            "class": class_response,
+                            "import": (
+                                f"WB/{self.section}/{component_path}"
+                                f"/{class_response}"
+                                .replace("/", ".")
+                            ),
+                            "status_code": status,
+                        }
 
                 build_request_class(
                     section=self.section,
                     method=method,
                     url=key,
-                    parameters=[],  # !!!!!!!!!!!
+                    parameters=parameters_data,
                     responses_classes=responses_classes,
-                    body_request_class=body_request_class.get("class")
+                    body_request_class=body_request_class,
+                    description=build_class_header(title, description)
                 )
 
                 print(method, key, body_request_class, responses_classes)
-
-                pass
-
 
     def parse_wb_api(self):
         response = requests.get(
@@ -395,17 +500,23 @@ class WBParser:
         # Параметрв запросов
         parameters = self.components.get("parameters")
         if parameters:
-            path = f"WB/{self.section}/components/parameters"
-            build_path(path)
             for parameter, value in parameters.items():
                 type_ = value.get("schema").get("type")
-                write_parameter_to_script(
-                    path=path,
-                    name=parameter,
-                    in_=value.get("in"),
-                    description=value.get("description"),
-                    required=value.get("required"),
-                    type_=type_
+                if type_ == "integer":
+                    type_ = "int"
+                elif type == "string":
+                    type_ = "str"
+                else:
+                    pass
+
+                self.parameters.append(
+                    {
+                        "name": parameter,
+                        "in": value.get("in"),
+                        "description": value.get("description"),
+                        "required": True if value.get("required") else False,
+                        "type": type_
+                    }
                 )
 
         # ответы

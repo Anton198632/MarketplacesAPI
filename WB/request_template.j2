@@ -1,25 +1,15 @@
-{% for imp in imports %}
-{{ imp }}
+{% for imp in imports %}{{ imp }}
 {% endfor %}
-
 {% for const_name, const_value in constants.items() %}
-{{ const_name }} = {{ const_value }}
-{% endfor %}
+{{ const_name }} = "{{ const_value }}"{% endfor %}
 
 {% for class_name, class_info in classes.items() %}
 class {{ class_name }}:
-    {% if class_info.attributes %}
+{% if class_info.description %}{{ class_info.description }}{% endif %}{% if class_info.attributes %}
     def __init__(self, {% for attr, typ in class_info.attributes.items() %}{{ attr }}: {{ typ }}{% if not loop.last %}, {% endif %}{% endfor %}):
-        {% for attr in class_info.attributes %}
-        self.{{ attr }} = {{ attr }}
-        {% endfor %}
-
-    {% endif %}
+        {% for attr in class_info.attributes %}self.{{ attr }} = {{ attr }}{% endfor %}{% endif %}
     {% for method_name, method_info in class_info.methods.items() %}
     def {{ method_name }}({% for param in method_info.params %}{{ param }}{% if not loop.last %}, {% endif %}{% endfor %}):
         {% for line in method_info.body %}
-        {{ line }}
-        {% endfor %}
-
-    {% endfor %}
-{% endfor %}
+        {{ line }}{% endfor %}
+{% endfor %}{% endfor %}

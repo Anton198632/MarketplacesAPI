@@ -21,7 +21,7 @@ def write_class_to_script(
         imports: set,
         annotations: dict,
         descriptions: Optional[dict] = None,
-        header: Optional[str] = None
+        header: Optional[str] = None,
 ):
     # Запись в файл-скрипт
     filename = f"{path}/{class_.__name__}.py"
@@ -29,11 +29,18 @@ def write_class_to_script(
 
         # Запись импортов
         for imp in imports:
-            if len(imp) > 79:
-                begin = imp[0:imp.rfind(" ")]
-                end = imp[imp.rfind(" ") + 1:]
-                imp = f"{begin} (\n    {end},\n)"
-            file.write(f"{imp}\n")
+            # if len(imp) > 79:
+            #     begin = imp[0:imp.rfind(" ")]
+            #     end = imp[imp.rfind(" ") + 1:]
+            #     imp = f"{begin} (\n    {end},\n)"
+
+            row = f"{imp}\n"
+            if "CLASS" in imp:
+                import_class_name = imp.split(" ")[-1]
+                row = row.replace("CLASS", import_class_name)
+                pass
+
+            file.write(row)
         file.write("\n\n")
 
         # Запись определения класса
@@ -43,37 +50,59 @@ def write_class_to_script(
         if header:
             file.write(header)
 
+        annotations_result = []
         for field_name, field_annotation in annotations.items():
-            if hasattr(field_annotation, "__origin__"):
-                if field_annotation.__origin__ is Union and type(
-                        None) in field_annotation.__args__:
-                    non_none_args = [arg for arg in
-                                     field_annotation.__args__ if
-                                     arg is not type(None)]
-                    annotation_str = (
-                        f"Optional[{non_none_args[0].__name__}]"
-                    )
-                elif field_annotation.__origin__ is list:
-                    annotation_str = (
-                        f"{field_annotation.__name__}"
-                        f"[{field_annotation.__args__[0].__name__}]"
-                    )
-                else:
-                    args = ", ".join(
-                        arg.__name__ for arg in field_annotation.__args__
-                    )
-                    annotation_str = (
-                        f"{field_annotation.__origin__.__name__}[{args}]"
-                    )
+            annotation_str = (
+                str(field_annotation)
+                .replace("typing.", "")
+                .replace("WB.parser.", "")
+                .replace("<class '", "")
+                .replace("'>", "")
+            )
 
-            elif field_annotation:
-                annotation_str = field_annotation.__name__
-            else:
-                annotation_str = None
+            annotations_result.append(
+                {
+                    "field_name": field_name,
+                    "annotation_str": annotation_str,
+                    "required": "Optional" not in annotation_str
+
+                }
+            )
+
+            # if hasattr(field_annotation, "__origin__"):
+            #     if field_annotation.__origin__ is Union and type(
+            #             None) in field_annotation.__args__:
+            #         non_none_args = [arg for arg in
+            #                          field_annotation.__args__ if
+            #                          arg is not type(None)]
+            #         annotation_str = (
+            #             f"Optional[{non_none_args[0].__name__}]"
+            #         )
+            #     elif field_annotation.__origin__ is list:
+            #         annotation_str = (
+            #             f"{field_annotation.__name__}"
+            #             f"[{field_annotation.__args__[0].__name__}]"
+            #         )
+            #     else:
+            #         args = ", ".join(
+            #             arg.__name__ for arg in field_annotation.__args__
+            #         )
+            #         annotation_str = (
+            #             f"{field_annotation.__origin__.__name__}[{args}]"
+            #         )
+            #
+            # elif field_annotation:
+            #     annotation_str = field_annotation.__name__
+            # else:
+            #     annotation_str = None
+
+        annotations_result.sort(key=lambda a: a.get("required"), reverse=True)
+
+        for annot in annotations_result:
 
             description = (
-                descriptions[field_name]
-                if descriptions and descriptions.get(field_name)
+                descriptions[annot.get("field_name")]
+                if descriptions and descriptions.get(annot.get("field_name"))
                 else ""
             )
 
@@ -98,52 +127,43 @@ def write_class_to_script(
 
             file.write(f"{description}\n")
             file.write(
-                f"    {field_name}: {annotation_str}\n"
+                f'    {annot.get("field_name")}:'
+                f' {annot.get("annotation_str")}'
+                f'{" = None" if not annot.get("required") else ""}\n'
             )
 
 
-def write_const_to_scripts(path: str, name: str, imports: set, data: str):
+def write_const_to_scripts(
+    path: str,
+    name: str,
+    imports: set,
+    classes: list,
+    header: Optional[str] = None,
+):
     # Запись в файл-скрипт
     name = f"{name[0].upper()}{name[1:]}"
     filename = f"{path}/{name}.py"
     with open(filename, 'w', encoding="utf-8") as file:
         # Запись импортов
         for imp in imports:
-            if len(imp) > 79:
-                begin = imp[0:imp.rfind(" ")]
-                end = imp[imp.rfind(" ") + 1]
-                imp = f"{begin} (\n    {end},\n)"
-            file.write(f"{imp}\n")
-        file.write("\n\n")
+            # if len(imp) > 79:
+            #     begin = imp[0:imp.rfind(" ")]
+            #     end = imp[imp.rfind(" ") + 1]
+            #     imp = f"{begin} (\n    {end},\n)"
+            row = f"{imp}\n"
+            if "CLASS" in imp:
+                import_class_name = imp.split(" ")[-1]
+                row = row.replace("CLASS", import_class_name)
+                pass
 
-        file.write(data)
+            file.write(row)
 
-
-def write_parameter_to_script(
-    path: str,
-    name: str,
-    in_: str,
-    description: str,
-    required: bool,
-    type_: str
-):
-    name = f"{name[0].upper()}{name[1:]}"
-    filename = f"{path}/{name}.py"
-
-    if type_ == "integer":
-        type_ = "int"
-    elif type == "string":
-        type_ = "str"
-    else:
-        pass
-
-    with open(filename, 'w', encoding="utf-8") as file:
-        if not required:
-            file.write("from typing import Optional\n\n\n")
-        file.write(f"class {name}:\n")
-        file.write(build_class_header(title=description))
-        file.write(f'    IN = "{in_}"\n')
-        if required:
-            file.write(f"    value: {type_}")
-        else:
-            file.write(f"    value: Optional[{type_}]\n")
+        for class_ in classes:
+            header_text = f"    {header}\n" if header else ""
+            file.write(
+                f"\n\n@dataclass\n"
+                f'class {class_.get("class_name")}'
+                f'({class_.get("base_class")}):\n'
+                f"{header_text}"
+                '    pass\n'
+            )

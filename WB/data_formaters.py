@@ -1,4 +1,5 @@
 import os
+import re
 from dataclasses import asdict
 from typing import Optional, List, Dict
 
@@ -45,36 +46,79 @@ def build_request_class(
         url: str,
         parameters: List,
         responses_classes: Dict,
-        body_request_class: Optional[object] = None,
+        description: str,
+        body_request_class: Optional[dict] = None,
 ):
-    class_name = "".join([f"{u[0].upper()}{u[1:]}" for u in url[1:].split("/")])
+    class_name = "".join(
+        [f"{u[0].upper()}{u[1:]}" for u in url[1:].split("/")]
+    )
+
+    if "{" in class_name:
+        cl_n_parts = re.split(r"[{}]", class_name)
+        class_name = "".join(
+            [f"{cl[0].upper()}{cl[1:]}" if cl else "" for cl in cl_n_parts]
+        )
+
     class_name = f"{class_name}{method.capitalize()}"
 
     imports_responses_classes = []
+    responses_handler_rows = []
     for key, response_class in responses_classes.items():
-        responses_path = "responses"
-        if not os.path.exists(
-            f"WB/{section}/{responses_path}/{response_class}.py"
-        ):
-            responses_path = "schemas"
         imports_responses_classes.append(
-            f"from WB.{section}.{responses_path} import {response_class}"
+            f'from {response_class.get("import")}'
+            f' import {response_class.get("class")}'
         )
 
-    body_request_json_row = ("    json=asdict(body_request)")
-    headers = ('    headers={"Authorization": self.api_key"},')
+        if "X" in key:
+            responses_handler_rows += [
+                f"if is_xx_status(response.status_code, {str(key)[0]}):",
+            ]
+        else:
+            responses_handler_rows += [f"if response.status_code == {key}:"]
+        responses_handler_rows += [
+            f'    return from_response({response_class.get("class")},'
+            f' response)',
+        ]
 
-    parameters = [f"{p}: str" for p in parameters]
+    body_request_json_row = (
+        "    json=asdict(body_request)" if body_request_class else ""
+    )
+    headers = '    headers={"Authorization": self.api_key},'
+
+    if len(parameters) > 0:
+        for parameter in parameters:
+            if parameter.get("in") != "query":
+                pass
+        pass
+
+    parameters_ = [
+        (
+            f'{p.get("name")}: {p.get("type")}'
+            f'{f" = None" if not p.get("required") else ""}'
+        )
+        if p.get("in") == "query" else ""
+        for p in parameters
+    ]
+
+
+
     if body_request_class:
-        parameters.append(f"body_request: {body_request_class}")
+        parameters_.append(f'body_request: {body_request_class.get("class")}')
 
     class_data = {
         "imports": [
-            "import requests",
-            "from dataclasses import asdict",
-            "from WB.create_logger import create_logger",
 
-            f"from WB.{section}.requestBodies import {body_request_class}"
+            "from dataclasses import asdict",
+            "import requests",
+            "from WB.create_logger import create_logger",
+            "from WB.serializers import from_response",
+            "from WB.utils import build_parameters_for_url, is_xx_status",
+
+            (
+                f'from {body_request_class.get("import")}'
+                f'.{body_request_class.get("class")}'
+                f' import {body_request_class.get("class")}'
+            )
             if body_request_class else "",
 
             *imports_responses_classes,
@@ -86,6 +130,7 @@ def build_request_class(
         },
         "classes": {
             class_name: {
+                "description": description,
                 "attributes": {
                     "api_key": "str",
                 },
@@ -93,14 +138,18 @@ def build_request_class(
                     "execute": {
                         "params": [
                             "self",
-                            *parameters
+                            *parameters_
                         ],
                         "body": [
+                            f"url = build_parameters_for_url(URL,"
+                            f" self.execute)",
+
                             f"response = requests.{method}(",
-                            f'    url="{url}",',
+                            '    url=f"{SERVER}{url}",',
                             headers,
                             body_request_json_row,
-                            f")"
+                            f")",
+                            *responses_handler_rows,
                         ]
                     }
                 }
@@ -121,5 +170,8 @@ def build_request_class(
         constants=class_data['constants'],
         classes=class_data['classes']
     )
+
+    with open(f"WB/{section}/{class_name}.py", "w", encoding="utf-8") as f:
+        f.write(output)
 
     pass
