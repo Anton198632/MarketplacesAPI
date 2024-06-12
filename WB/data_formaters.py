@@ -59,15 +59,28 @@ def build_request_class(
             [f"{cl[0].upper()}{cl[1:]}" if cl else "" for cl in cl_n_parts]
         )
 
-    class_name = f"{class_name}{method.capitalize()}"
+    class_name = f"{class_name}{method.capitalize()}".replace("-", "_")
 
     imports_responses_classes = []
     responses_handler_rows = []
     for key, response_class in responses_classes.items():
-        imports_responses_classes.append(
-            f'from {response_class.get("import")}'
-            f' import {response_class.get("class")}'
-        )
+        class_ = response_class.get("class")
+        classes = response_class.get("classes")
+        if class_:
+            imp = (
+                response_class.get("import")
+                .replace("{", "").replace("}", "").replace("-", "_")
+            )
+            imports_responses_classes.append(
+                f'from {imp} import {response_class.get("class")}'
+            )
+        if classes:
+            imp = (
+                response_class.get("imports")
+                .replace("{", "").replace("}", "").replace("-", "_")
+            )
+            imports_responses_classes.append(f"from {imp} import {classes}")
+            pass
 
         if "X" in key:
             responses_handler_rows += [
@@ -76,7 +89,7 @@ def build_request_class(
         else:
             responses_handler_rows += [f"if response.status_code == {key}:"]
         responses_handler_rows += [
-            f'    return from_response({response_class.get("class")},'
+            f'    return from_response({class_ if class_ else f"[{classes}]"},'
             f' response)',
         ]
 
@@ -87,39 +100,62 @@ def build_request_class(
 
     if len(parameters) > 0:
         for parameter in parameters:
-            if parameter.get("in") != "query":
+            in_ = parameter.get("in")
+            if in_ != "query" and in_ != "path":
                 pass
+
         pass
 
     parameters_ = [
         (
-            f'{p.get("name")}: {p.get("type")}'
+            f'{p.get("original_name")}: {p.get("type")}'
             f'{f" = None" if not p.get("required") else ""}'
         )
-        if p.get("in") == "query" else ""
+        if p.get("in") == "query" or p.get("in") == "path" else ""
         for p in parameters
     ]
 
-
-
     if body_request_class:
-        parameters_.append(f'body_request: {body_request_class.get("class")}')
+        class_ = body_request_class.get("class")
+        classes = body_request_class.get("classes")
+        if class_:
+            parameters_.append(f"body_request: {class_}")
+        if classes:
+            parameters_.append(f'body_request: Union[{classes}]')
 
     class_data = {
         "imports": [
 
             "from dataclasses import asdict",
             "import requests",
-            "from WB.create_logger import create_logger",
             "from WB.serializers import from_response",
-            "from WB.utils import build_parameters_for_url, is_xx_status",
+            (
+                "from WB.utils import build_parameters_for_url" +
+                (
+                    ", is_xx_status"
+                    if any("X" in key for key in responses_classes.keys())
+                    else ""
+                )
+            ),
+            (
+                "from typing import Union"
+                if body_request_class and body_request_class.get("classes")
+                else None
+            ),
 
             (
                 f'from {body_request_class.get("import")}'
-                f'.{body_request_class.get("class")}'
-                f' import {body_request_class.get("class")}'
-            )
-            if body_request_class else "",
+                f'.{body_request_class.get("class").replace(".", "")}'
+                f' import {body_request_class.get("class").replace(".", "")}'
+            ).replace("{", "").replace("}", "").replace("-", "_")
+            if body_request_class and body_request_class.get("class") else "",
+
+            (
+                f'from {body_request_class.get("imports")}'
+                f' import {body_request_class.get("classes").replace(".", "")}'
+            ).replace("{", "").replace("}", "").replace("-", "_")
+            if body_request_class and body_request_class.get("classes")
+            else "",
 
             *imports_responses_classes,
         ],
