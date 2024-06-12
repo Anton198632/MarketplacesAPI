@@ -24,6 +24,9 @@ def write_class_to_script(
         header: Optional[str] = None,
 ):
     # Запись в файл-скрипт
+    path = path.replace("{", "").replace("}", "").replace("-", "_")
+    build_path(path)
+
     filename = f"{path}/{class_.__name__}.py"
     with open(filename, 'w', encoding="utf-8") as file:
 
@@ -36,7 +39,7 @@ def write_class_to_script(
 
             row = f"{imp}\n"
             if "CLASS" in imp:
-                import_class_name = imp.split(" ")[-1]
+                import_class_name = imp.split(" ")[-1].replace(".", "")
                 row = row.replace("CLASS", import_class_name)
                 pass
 
@@ -133,7 +136,7 @@ def write_class_to_script(
             )
 
 
-def write_const_to_scripts(
+def write_descendant_class_to_script(
     path: str,
     name: str,
     imports: set,
@@ -141,8 +144,11 @@ def write_const_to_scripts(
     header: Optional[str] = None,
 ):
     # Запись в файл-скрипт
-    name = f"{name[0].upper()}{name[1:]}"
+    name = f"{name[0].upper()}{name[1:]}".replace("-", "_")
+    path = path.replace("{", "").replace("}", "").replace("-", "_")
+    build_path(path)
     filename = f"{path}/{name}.py"
+
     with open(filename, 'w', encoding="utf-8") as file:
         # Запись импортов
         for imp in imports:
@@ -152,7 +158,7 @@ def write_const_to_scripts(
             #     imp = f"{begin} (\n    {end},\n)"
             row = f"{imp}\n"
             if "CLASS" in imp:
-                import_class_name = imp.split(" ")[-1]
+                import_class_name = imp.split(" ")[-1].replace(".", "")
                 row = row.replace("CLASS", import_class_name)
                 pass
 
