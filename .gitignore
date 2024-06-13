@@ -2,3 +2,6 @@
 venv/
 .env
 WB/__pycache__/
+WB/**/
+!WB/*
+WB/*/

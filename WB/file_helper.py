@@ -1,8 +1,8 @@
 import json
 import os
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
-from WB.data_formaters import build_class_header
+from WB.data_formaters import replace_key_words_and_symbols
 
 
 def dict_write(filename: str, data: Dict) -> None:
@@ -24,7 +24,7 @@ def write_class_to_script(
         header: Optional[str] = None,
 ):
     # Запись в файл-скрипт
-    path = path.replace("{", "").replace("}", "").replace("-", "_")
+    path = replace_key_words_and_symbols(path)
     build_path(path)
 
     filename = f"{path}/{class_.__name__}.py"
@@ -32,11 +32,6 @@ def write_class_to_script(
 
         # Запись импортов
         for imp in imports:
-            # if len(imp) > 79:
-            #     begin = imp[0:imp.rfind(" ")]
-            #     end = imp[imp.rfind(" ") + 1:]
-            #     imp = f"{begin} (\n    {end},\n)"
-
             row = f"{imp}\n"
             if "CLASS" in imp:
                 import_class_name = imp.split(" ")[-1].replace(".", "")
@@ -72,37 +67,9 @@ def write_class_to_script(
                 }
             )
 
-            # if hasattr(field_annotation, "__origin__"):
-            #     if field_annotation.__origin__ is Union and type(
-            #             None) in field_annotation.__args__:
-            #         non_none_args = [arg for arg in
-            #                          field_annotation.__args__ if
-            #                          arg is not type(None)]
-            #         annotation_str = (
-            #             f"Optional[{non_none_args[0].__name__}]"
-            #         )
-            #     elif field_annotation.__origin__ is list:
-            #         annotation_str = (
-            #             f"{field_annotation.__name__}"
-            #             f"[{field_annotation.__args__[0].__name__}]"
-            #         )
-            #     else:
-            #         args = ", ".join(
-            #             arg.__name__ for arg in field_annotation.__args__
-            #         )
-            #         annotation_str = (
-            #             f"{field_annotation.__origin__.__name__}[{args}]"
-            #         )
-            #
-            # elif field_annotation:
-            #     annotation_str = field_annotation.__name__
-            # else:
-            #     annotation_str = None
-
         annotations_result.sort(key=lambda a: a.get("required"), reverse=True)
 
         for annot in annotations_result:
-
             description = (
                 descriptions[annot.get("field_name")]
                 if descriptions and descriptions.get(annot.get("field_name"))
@@ -145,17 +112,13 @@ def write_descendant_class_to_script(
 ):
     # Запись в файл-скрипт
     name = f"{name[0].upper()}{name[1:]}".replace("-", "_")
-    path = path.replace("{", "").replace("}", "").replace("-", "_")
+    path = replace_key_words_and_symbols(path)
     build_path(path)
     filename = f"{path}/{name}.py"
 
     with open(filename, 'w', encoding="utf-8") as file:
         # Запись импортов
         for imp in imports:
-            # if len(imp) > 79:
-            #     begin = imp[0:imp.rfind(" ")]
-            #     end = imp[imp.rfind(" ") + 1]
-            #     imp = f"{begin} (\n    {end},\n)"
             row = f"{imp}\n"
             if "CLASS" in imp:
                 import_class_name = imp.split(" ")[-1].replace(".", "")

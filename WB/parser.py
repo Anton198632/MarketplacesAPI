@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -7,7 +6,9 @@ from typing import Optional, Dict, Any, List
 import requests
 
 from WB.constants import POST, GET, PUT, DELETE, PATCH
-from WB.data_formaters import build_class_header, build_request_class
+from WB.data_formaters import (
+    build_class_header, build_request_class, convert_type
+)
 from WB.file_helper import (
     build_path,
     write_class_to_script,
@@ -31,7 +32,7 @@ class WBParser:
         self.parameters = []
         self.section = section
 
-        self.section_dir = f"{current_dir}/{section}"
+        self.section_dir = f'{current_dir}/{self.section.replace("-", "_")}'
 
     def create_class(
             self, class_name, properties, component, required, header=None,
@@ -45,7 +46,6 @@ class WBParser:
 
         import_pref = f"from WB.{self.section}.COMPONENT.CLASS import "
 
-        # if properties and len(properties.items()) != len(required):
         imports.add("from typing import Optional")
 
         for name, value in properties.items():
@@ -66,7 +66,6 @@ class WBParser:
             props = value.get("properties")
             if type_ == "object" and not props:
                 field_annotation = Dict[str, Any]
-                # imports.add("from typing import Optional")
                 imports.add("from typing import Dict")
                 imports.add("from typing import Any")
 
@@ -217,8 +216,11 @@ class WBParser:
                     if "{" in schema:
                         cl_n_parts = re.split(r"[{}]", schema)
                         schema = "".join(
-                            [f"{cl[0].upper()}{cl[1:]}" if cl else "" for cl in
-                             cl_n_parts]
+                            [
+                                f"{cl[0].upper()}{cl[1:]}" if cl
+                                else "" for cl
+                                in cl_n_parts
+                            ]
                         )
                     write_descendant_class_to_script(
                         path=f"WB/{self.section}/{component}",
@@ -285,13 +287,50 @@ class WBParser:
                     cls_names = []
                     for i in range(0, len(one_of)):
                         ref = one_of[i].get("$ref")
-
+                        type_ = one_of[i].get("type")
                         if ref:
                             cl_name, component_ = parse_ref(ref)
-                            import_pref = import_pref.replace(
+                            import_pref_ = import_pref.replace(
                                 "COMPONENT", component_
                             )
-                            imports.add(f"{import_pref}{cl_name}")
+                            imports.add(f"{import_pref_}{cl_name}")
+                            cls_names.append(cl_name)
+                        elif type_ == "object":
+                            cl_name = f"{schema}{i}"
+
+                            properties = one_of[i].get("properties")
+                            required = one_of[i].get("required")
+                            self.create_class(
+                                cl_name,
+                                properties,
+                                component,
+                                required,
+                                header
+                            )
+                            cls_names.append(cl_name)
+                            import_pref_ = import_pref.replace(
+                                "COMPONENT", component.replace("/", ".")
+                            )
+                            imports.add(f"{import_pref_}{cl_name}")
+                        elif type_ == "string" or type_ == "integer":
+                            type_ = convert_type(type_)
+                            cl_name = f"{schema}{i}"
+                            imports.add("from dataclasses import dataclass")
+                            write_descendant_class_to_script(
+                                path=f"WB/{self.section}/{component}",
+                                name=cl_name,
+                                imports=imports,
+                                classes=[
+                                    {
+                                        "class_name": cl_name,
+                                        "base_class": type_
+                                    }
+                                ],
+                            )
+                            import_pref_ = import_pref.replace(
+                                "COMPONENT", component.replace("/", ".")
+                            )
+                            imports.add(f"{import_pref_}{cl_name}")
                             cls_names.append(cl_name)
                         else:
                             pass
@@ -312,9 +351,12 @@ class WBParser:
 
                     return {
                         "classes": (
-                            ", ".join([
-                                class_.get("class_name") for class_ in classes
-                            ])
+                            ", ".join(
+                                [
+                                    class_.get("class_name")
+                                    for class_ in classes
+                                ]
+                            )
                         ),
                         "module": schema
                     }
@@ -348,24 +390,15 @@ class WBParser:
                         ],
                     )
 
-        elif type_ == "string":
+        elif type_ == "string" or type_ == "integer":
+            type_ = convert_type(type_)
             imports = set()
             imports.add("from dataclasses import dataclass")
             write_descendant_class_to_script(
                 path=f"WB/{self.section}/{component}",
                 name=schema,
                 imports=imports,
-                classes=[{"class_name": schema, "base_class": "str"}]
-            )
-
-        elif type_ == "integer":
-            imports = set()
-            imports.add("from dataclasses import dataclass")
-            write_descendant_class_to_script(
-                path=f"WB/{self.section}/{component}",
-                name=schema,
-                imports=imports,
-                classes=[{"class_name": schema, "base_class": "int"}]
+                classes=[{"class_name": schema, "base_class": type_}]
             )
 
         else:
@@ -373,8 +406,8 @@ class WBParser:
 
         return f"{schema[0].upper()}{schema[1:]}"
 
-    def parse_paths(self):
-        for key, value in self.paths.items():
+    def parse_paths(self, paths):
+        for key, value in paths.items():
             methods = [
                 key for key in [POST, GET, PUT, DELETE, PATCH]
                 if key in value
@@ -403,9 +436,9 @@ class WBParser:
                         body_request_class = {
                             "class": class_,
                             "import": (
-                            f"WB/{self.section}/{component_path}"
+                                f"WB/{self.section}/{component_path}"
                                 .replace("/", ".")
-                            )
+                            ),
                         }
                     else:
                         body_request_class = {
@@ -414,8 +447,7 @@ class WBParser:
                                 f"WB/{self.section}/{component_path}"
                                 f'/{class_.get("module")}'
                                 .replace("/", ".")
-                            )
-
+                            ),
                         }
                     pass
                 else:
@@ -454,8 +486,6 @@ class WBParser:
                             schema=class_name_response,
                             value=response,
                             component=component_path,
-                            # title=title,
-                            # description=description,
                         )
 
                         if isinstance(class_response, str):
@@ -464,7 +494,7 @@ class WBParser:
                                 "import": (
                                     f"WB/{self.section}/{component_path}"
                                     f"/{class_response}"
-                                        .replace("/", ".")
+                                    .replace("/", ".")
                                 ),
                                 "status_code": status,
                             }
@@ -474,7 +504,7 @@ class WBParser:
                                 "imports": (
                                     f"WB/{self.section}/{component_path}"
                                     f'/{class_response.get("module")}'
-                                        .replace("/", ".")
+                                    .replace("/", ".")
                                 ),
                                 "status_code": status,
                             }
@@ -490,12 +520,12 @@ class WBParser:
                     description=build_class_header(title, description)
                 )
 
-                print(method, key, body_request_class, responses_classes)
-
     def parse_wb_api(self):
         response = requests.get(
             f"https://openapi.wildberries.ru/{self.section}/api/ru/"
         )
+        self.section = self.section.replace("-", "_")
+
         text = response.text
 
         redoc_state = text[text.find("__redoc_state = ") + 16:]
@@ -514,38 +544,30 @@ class WBParser:
         ) as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
 
-        self.paths = data.get("paths")
-        self.components = data.get("components")
+        components = data.get("components")
 
         # получаем схемы
-        schemas = self.components.get("schemas")
-        build_path(f"WB/{self.section}/components/schemas")
-        for schema, value in schemas.items():
-            self.create(schema, value, "components/schemas")
+        schemas = components.get("schemas")
+        if schemas:
+            build_path(f"WB/{self.section}/components/schemas")
+            for schema, value in schemas.items():
+                self.create(schema, value, "components/schemas")
 
         # тела запросов
-        request_bodies = self.components.get("requestBodies")
-        build_path(f"WB/{self.section}/components/requestBodies")
+        request_bodies = components.get("requestBodies")
         if request_bodies:
+            build_path(f"WB/{self.section}/components/requestBodies")
             for request_body, value in request_bodies.items():
                 self.create(
                     request_body, value, "components/requestBodies",
                 )
 
         # Параметрв запросов
-        parameters = self.components.get("parameters")
+        parameters = components.get("parameters")
         if parameters:
             for parameter, value in parameters.items():
                 type_ = value.get("schema").get("type")
-                if type_ == "integer":
-                    type_ = "int"
-                elif type == "string":
-                    type_ = "str"
-                else:
-                    pass
-
-                if value.get("in") != "query":
-                    pass
+                type_ = convert_type(type_)
 
                 self.parameters.append(
                     {
@@ -559,11 +581,13 @@ class WBParser:
                 )
 
         # ответы
-        responses = self.components.get("responses")
+        responses = components.get("responses")
         build_path(f"WB/{self.section}/components/responses")
         if responses:
             for response, value in responses.items():
                 title = value.get("description").replace(" ", "")
                 self.create(response, value, "components/responses", title)
 
-        self.parse_paths()
+        # маршруты
+        paths = data.get("paths")
+        self.parse_paths(paths)

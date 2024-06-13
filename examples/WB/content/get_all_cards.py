@@ -36,8 +36,10 @@ def get_all_cards():
 
     cards = []
 
+    request = ContentV2GetCardsListPost(api_key)
+
     while True:
-        result = ContentV2GetCardsListPost(api_key).execute(
+        response = request.execute(
             body_request=RequestBody(
                 settings=RequestBodySettings(
                     sort=RequestBodySettingsSort(True),
@@ -47,12 +49,12 @@ def get_all_cards():
             ),
         )
 
-        if not isinstance(result, Response200):
-            logger.warning(result)
+        if not isinstance(response, Response200):
+            logger.warning(response)
             break
 
-        total = result.cursor.total
-        cards += result.cards
+        total = response.cursor.total
+        cards += response.cards
 
         logger.info(f"{total} entries received. Total - {len(cards)}")
 
@@ -61,9 +63,8 @@ def get_all_cards():
 
         cursor = CombinedCursor(
             limit=cursor.limit,
-            updatedAt=result.cursor.updatedAt,
-            nmID=result.cursor.nmID,
+            updatedAt=response.cursor.updatedAt,
+            nmID=response.cursor.nmID,
         )
 
-    pass
     return cards

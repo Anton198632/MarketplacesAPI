@@ -1,41 +1,96 @@
-import os
 import re
-from dataclasses import asdict
 from typing import Optional, List, Dict
 
 from jinja2 import FileSystemLoader, Environment
+
+MAX_SYMBOLS = 79
+
+
+def convert_type(type_):
+    if type_ == "integer":
+        type_ = "int"
+    elif type_ == "string":
+        type_ = "str"
+    elif type_ == "boolean":
+        type_ = "bool"
+    else:
+        pass
+    return type_
+
+
+def replace_key_words_and_symbols(text):
+    pattern = r'\breturn\b'
+    replacement = 'return_'
+    result = re.sub(pattern, replacement, text)
+    result = result.replace("{", "").replace("}", "").replace("-", "_")
+    return result
+
+
+def split_text_with_newlines(text, max_length):
+    def split_line(line, maxlength):
+        words = line.split()
+        lines = []
+        current_line = ""
+
+        for word in words:
+            if len(current_line) + len(word) + 1 <= maxlength:
+                if current_line:
+                    current_line += " " + word
+                else:
+                    current_line = word
+            else:
+                lines.append(current_line)
+                current_line = word
+
+        if current_line:
+            lines.append(current_line)
+
+        return lines
+
+    # Разделяем текст по символам новой строки
+    sections = text.split('\n')
+    result_lines = []
+
+    for section in sections:
+        result_lines.extend(split_line(section, max_length))
+
+    return result_lines
 
 
 def build_class_header(
         title: Optional[str] = None, description: str = None
 ) -> Optional[str]:
     if description:
-        description = description.replace(" ", " ")
-        description = description.replace("\n", "\n    ")
+        description = (
+            description.replace(" ", " ")
+            .replace("\n", "\n    ")
+            .replace("<b>", "")
+            .replace("</b>", "")
+            .replace("<p>", "")
+            .replace("</p>", "")
+            .replace("<br>", "")
+            .replace("<li>", "")
+            .replace("</li>", "")
+            .replace("<ul>", "")
+            .replace("</ul>", "")
+        )
+        description = "\n    ".join(
+            split_text_with_newlines(description, MAX_SYMBOLS - 4)
+        )
     else:
         description = ""
 
     if title:
         title = title.replace(" ", " ")
         title = title.replace("\n", "\n    ")
+        title = "\n    ".join(split_text_with_newlines(title, MAX_SYMBOLS - 4))
 
     header = (
-        f'"""\n{title}\n{description}\n"""\n' if title else None
+        f'\n    {title}\n    {description}' if title else None
     )
     if header:
-        result_header = []
-        rows = header.split("\n")
-        for row in rows:
-            if len(row) > 75:
-                row_parts = [
-                    row[i: i + 75]
-                    for i in range(0, len(row), 75)
-                ]
-            else:
-                row_parts = [row]
-            result_header += row_parts
-        header = "    " + "\n    ".join(result_header) + "\n"
         header = header.replace("    \n", "").replace("        ", "    ")
+        header = f'    """{header}\n    """\n'
 
     return header
 
@@ -67,18 +122,12 @@ def build_request_class(
         class_ = response_class.get("class")
         classes = response_class.get("classes")
         if class_:
-            imp = (
-                response_class.get("import")
-                .replace("{", "").replace("}", "").replace("-", "_")
-            )
+            imp = replace_key_words_and_symbols(response_class.get("import"))
             imports_responses_classes.append(
                 f'from {imp} import {response_class.get("class")}'
             )
         if classes:
-            imp = (
-                response_class.get("imports")
-                .replace("{", "").replace("}", "").replace("-", "_")
-            )
+            imp = replace_key_words_and_symbols(response_class.get("imports"))
             imports_responses_classes.append(f"from {imp} import {classes}")
             pass
 
@@ -104,8 +153,6 @@ def build_request_class(
             if in_ != "query" and in_ != "path":
                 pass
 
-        pass
-
     parameters_ = [
         (
             f'{p.get("original_name")}: {p.get("type")}'
@@ -126,7 +173,7 @@ def build_request_class(
     class_data = {
         "imports": [
 
-            "from dataclasses import asdict",
+            "from dataclasses import asdict" if body_request_class else None,
             "import requests",
             "from WB.serializers import from_response",
             (
@@ -143,17 +190,17 @@ def build_request_class(
                 else None
             ),
 
-            (
+            replace_key_words_and_symbols(
                 f'from {body_request_class.get("import")}'
                 f'.{body_request_class.get("class").replace(".", "")}'
                 f' import {body_request_class.get("class").replace(".", "")}'
-            ).replace("{", "").replace("}", "").replace("-", "_")
+            )
             if body_request_class and body_request_class.get("class") else "",
 
-            (
+            replace_key_words_and_symbols(
                 f'from {body_request_class.get("imports")}'
                 f' import {body_request_class.get("classes").replace(".", "")}'
-            ).replace("{", "").replace("}", "").replace("-", "_")
+            )
             if body_request_class and body_request_class.get("classes")
             else "",
 
@@ -209,5 +256,3 @@ def build_request_class(
 
     with open(f"WB/{section}/{class_name}.py", "w", encoding="utf-8") as f:
         f.write(output)
-
-    pass
