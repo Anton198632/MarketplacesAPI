@@ -11,6 +11,7 @@ def dict_write(filename: str, data: Dict) -> None:
 
 
 def build_path(path: str) -> str:
+    path = replace_key_words_and_symbols(path)
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -36,6 +37,7 @@ def write_class_to_script(
             if "CLASS" in imp:
                 import_class_name = imp.split(" ")[-1].replace(".", "")
                 row = row.replace("CLASS", import_class_name)
+                row = replace_key_words_and_symbols(row)
                 pass
 
             file.write(row)
@@ -127,12 +129,19 @@ def write_descendant_class_to_script(
 
             file.write(row)
 
+        # for class_ in classes:
+        #     header_text = f"    {header}\n" if header else ""
+        #     file.write(
+        #         f"\n\n@dataclass\n"
+        #         f'class {class_.get("class_name")}'
+        #         f'({class_.get("base_class")}):\n'
+        #         f"{header_text}"
+        #         '    pass\n'
+        #     )
+
         for class_ in classes:
             header_text = f"    {header}\n" if header else ""
             file.write(
-                f"\n\n@dataclass\n"
-                f'class {class_.get("class_name")}'
-                f'({class_.get("base_class")}):\n'
-                f"{header_text}"
-                '    pass\n'
+                f"\n{header_text}"
+                f'{class_.get("class_name")} = {class_.get("base_class")}\n'
             )

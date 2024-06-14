@@ -51,9 +51,10 @@ response = request.execute(
     body_request=RequestBody(
         settings=RequestBodySettings(
             sort=RequestBodySettingsSort(True),
-            filter=RequestBodySettingsFilter(withPhoto=-1, ),
-            cursor=cursor
+            filter=RequestBodySettingsFilter(withPhoto=-1),
+            cursor=cursor,
         ),
     ),
 )
+
 ```

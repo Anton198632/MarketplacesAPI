@@ -15,7 +15,7 @@ def build_parameters_for_url(url, function):
     for param_name, param in first_function_signature.parameters.items():
         if param_name != "body_request" and param_name not in path_parameters:
             param_value = local_vars[param_name]
-            if param_value:
+            if param_value is not None:
                 parameters.append(f"{param_name}={param_value}")
 
     for path_parameter in path_parameters:

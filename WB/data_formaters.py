@@ -153,14 +153,7 @@ def build_request_class(
             if in_ != "query" and in_ != "path":
                 pass
 
-    parameters_ = [
-        (
-            f'{p.get("original_name")}: {p.get("type")}'
-            f'{f" = None" if not p.get("required") else ""}'
-        )
-        if p.get("in") == "query" or p.get("in") == "path" else ""
-        for p in parameters
-    ]
+    parameters_ = []
 
     if body_request_class:
         class_ = body_request_class.get("class")
@@ -169,6 +162,15 @@ def build_request_class(
             parameters_.append(f"body_request: {class_}")
         if classes:
             parameters_.append(f'body_request: Union[{classes}]')
+
+    parameters_ += [
+        (
+            f'{p.get("original_name")}: {p.get("type")}'
+            f'{f" = None" if not p.get("required") else ""}'
+        )
+        if p.get("in") == "query" or p.get("in") == "path" else ""
+        for p in parameters
+    ]
 
     class_data = {
         "imports": [
