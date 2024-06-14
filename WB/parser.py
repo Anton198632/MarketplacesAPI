@@ -48,6 +48,9 @@ class WBParser:
 
         imports.add("from typing import Optional")
 
+        if class_name == "Response200":
+            pass
+
         for name, value in properties.items():
             ref = value.get("$ref")
             if ref:
@@ -93,7 +96,7 @@ class WBParser:
                         import_pref.replace("COMPONENT", component_)
                     )
                     field_annotation = type(cl_name, (), {})
-                    annotations[name] = field_annotation
+                    annotations[name] = List[field_annotation]
                     imports.add(f"{import_pref}{cl_name}")
                     continue
 
@@ -230,6 +233,9 @@ class WBParser:
                             {"class_name": schema, "base_class": cl_name},
                         ],
                     )
+
+                else:
+                    pass
 
         if type_ == "object":
             properties = value.get("properties")
@@ -467,6 +473,25 @@ class WBParser:
                                 )
                             )[0]
                             parameters_data.append(parameter_data)
+                        else:
+                            parameters_data.append(
+                                {
+                                    "name": parameter.get("name"),
+                                    "original_name": parameter.get("name"),
+                                    "in": parameter.get("in"),
+                                    "description": (
+                                        parameter.get("description")
+                                    ),
+                                    "required": (
+                                        True if parameter.get("required")
+                                        else False
+                                    ),
+                                    "type": convert_type(
+                                        parameter.get("schema").get("type")
+                                    ),
+                                }
+                            )
+                            pass
 
                     parameters_data.sort(key=lambda p: p.get("required"))
                     parameters_data.reverse()
