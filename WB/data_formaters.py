@@ -13,6 +13,8 @@ def convert_type(type_):
         type_ = "str"
     elif type_ == "boolean":
         type_ = "bool"
+    elif type_ == "array":
+        type_ = "list"
     else:
         pass
     return type_
@@ -143,15 +145,31 @@ def build_request_class(
         ]
 
     body_request_json_row = (
-        "    json=asdict(body_request)" if body_request_class else ""
+        "    json=asdict(body_request)" if body_request_class else None
     )
-    headers = '    headers={"Authorization": self.api_key},'
 
+    header_parameters_str = ""
+    header_parameters = {}
     if len(parameters) > 0:
         for parameter in parameters:
             in_ = parameter.get("in")
-            if in_ != "query" and in_ != "path":
+            if in_ != "query" and in_ != "path" and in_ != "header":
                 pass
+            if in_ == "header":
+                signature_name = parameter.get("name").replace("-", "_")
+                signature_name = signature_name.lower()
+
+                header_parameters_str += (
+                    f', "{parameter.get("original_name")}":'
+                    f" self.{signature_name}"
+                )
+                header_parameters[signature_name] = "str"
+
+    headers = (
+        f'headers={{"Authorization": self.api_key{header_parameters_str}}},'
+    )
+
+    parameters = list(filter(lambda p: p.get("in") != "header", parameters))
 
     parameters_ = []
 
@@ -217,7 +235,7 @@ def build_request_class(
             class_name: {
                 "description": description,
                 "attributes": {
-                    "api_key": "str",
+                    "api_key": "str", **header_parameters
                 },
                 "methods": {
                     "execute": {
@@ -231,7 +249,7 @@ def build_request_class(
 
                             f"response = requests.{method}(",
                             '    url=f"{SERVER}{url}",',
-                            headers,
+                            f"    {headers}",
                             body_request_json_row,
                             f")",
                             *responses_handler_rows,

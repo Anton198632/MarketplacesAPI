@@ -474,10 +474,15 @@ class WBParser:
                             )[0]
                             parameters_data.append(parameter_data)
                         else:
+                            original_name = parameter.get("name")
+                            if "[" in original_name:
+                                original_name = original_name[
+                                    0: original_name.find("[")
+                                ]
                             parameters_data.append(
                                 {
                                     "name": parameter.get("name"),
-                                    "original_name": parameter.get("name"),
+                                    "original_name": original_name,
                                     "in": parameter.get("in"),
                                     "description": (
                                         parameter.get("description")
@@ -495,8 +500,6 @@ class WBParser:
 
                     parameters_data.sort(key=lambda p: p.get("required"))
                     parameters_data.reverse()
-
-                    pass
 
                 responses = content.get("responses")
                 responses_classes = {}
